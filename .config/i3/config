@@ -13,12 +13,13 @@ gaps inner 4
 
 
 # Scaling for hi dpi
-# exec_always xrandr --output eDP1 --scale 0.8x0.8
-# exec_always --no-startup-id xrandr --output eDP1 --scale 0.8x0.8
+exec_always --no-startup-id xrandr --output DP-1 --scale 1x1
+#exec_always --no-startup-id xrandr --output DP-2 --left-of DP-1
+
+exec_always --no-startup-id xcompmgr
 
 # Background
-exec_always --no-startup-id feh --bg-scale ~/Pictures/23497.jpg
-#font pango:monospace 12
+exec_always --no-startup-id feh --bg-scale ~/Pictures/duskcity.png
 
 # Change capslock to control
 exec_always --no-startup-id setxkbmap -option ctrl:nocaps
@@ -65,7 +66,7 @@ bindsym $mod+Shift+Return exec i3-sensible-terminal
 bindsym $mod+Shift+q kill
 
 # Launch dmenu
-bindsym $mod+d exec dmenu_run -fn 'Ubuntu Mono:style=Regular:size=9'
+bindsym $mod+d exec dmenu_run -fn 'Ubuntu Mono:style=Regular:size=16'
 # bindsym $mod+d exec --no-startup-id i3-dmenu-desktop
 
 # enter fullscreen mode for the focused container
@@ -73,9 +74,10 @@ bindsym $mod+f fullscreen toggle
 
 # Navigate
 bindsym $mod+Left focus left
+bindsym $mod+Right focus right
 bindsym $mod+Down focus down
-bindsym $mod+Right focus up
-bindsym $mod+semicolon focus right
+bindsym $mod+Up focus up
+
 
 # Move focused window
 bindsym $mod+Shift+Left move left
@@ -95,9 +97,7 @@ exec_always --no-startup-id sleep 5 && bluetooth off
 bindsym $mod+b exec firefox
 
 #################### Auto generated #########################################
-
-
-font pango:monospace 10
+font FiraCode:regular 12
 
 floating_modifier $mod
 
