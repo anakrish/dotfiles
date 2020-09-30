@@ -1,0 +1,48 @@
+startup_message off
+defscrollback 1000000
+term xterm-24bit
+termcapinfo xterm* ti@:te@
+#hardstatus alwayslastline
+shell /usr/bin/fish
+vbell off
+#escape ^za
+altscreen on
+truecolor on
+#pastefont on
+
+# Enter copy mode
+bind "t" eval "copy"
+bind "^t" eval "copy"
+
+# Page up/down
+bindkey -d "^v" eval "copy" "stuff ^f"
+bindkey -d "^[v" eval "copy" "stuff ^b"
+
+# prev, next
+bindkey -m "^n" eval "copy" "stuff j"
+bindkey -m "^p" eval "copy" "stuff k"
+bindkey -m "^[n" eval "copy" "stuff j"
+bindkey -m "^[p" eval "copy" "stuff k"
+
+# prev, next nor mal mode
+bindkey -d "^[n" eval "copy" "stuff j"
+bindkey -d "^[p" eval "copy" "stuff k"
+
+# Copy mode forward, backward
+bindkey -m "^f" eval "stuff l"
+bindkey -m "^b" eval "stuff h"
+
+bindkey -m "^[f" eval "stuff e"
+bindkey -m "^[b" eval "stuff b"
+
+bindkey -m "^[<" eval "stuff g"
+bindkey -m "^[>" eval "stuff G"
+
+# Marking
+bindkey -m "^ " eval "stuff y"
+
+# Copying in copy mode
+bindkey -m "^[w" eval "stuff ' '" writebuf "exec sh -c 'xsel -bi < /tmp/screen-exchange'"
+
+# Pasting
+bindkey -d "^y" eval  "exec sh -c 'xsel -bo > /tmp/screen-exchange'"  readbuf #copy  "paste ."

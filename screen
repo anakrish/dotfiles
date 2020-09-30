@@ -1,0 +1,2 @@
+#!/bin/sh
+screen -q -U -h 1000000
