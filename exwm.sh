@@ -12,9 +12,10 @@ nm-applet &
 #exec_always --not-startup-id redshift
 blueman-applet &
 sleep 1 && bluetooth off
-xautolock -detectsleep -time 10 -locker 'i3lock -c 000000 && sleep 1 && systemctl suspend' \
-	  -notify 30 -notifier 'notify-send -u normal  \"About to suspend in 30 seconds...\"' &
+#xautolock -detectsleep -time 10 -locker 'i3lock -c 000000 && sleep 1 && systemctl suspend' \
+#	  -notify 30 -notifier 'notify-send -u normal  \"About to suspend in 30 seconds...\"' &
 
+quake &
 # emacs
-emacs --daemon -eval "(my/init--exwm)"
-emacsclient -c
+emacs --daemon --with-profile optimal -eval "(my/init--exwm)"
+exec emacsclient -c
