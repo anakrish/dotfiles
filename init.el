@@ -106,8 +106,13 @@
 ;; Collection of pleasing themes
 (use-package doom-themes
   :config
-  (load-theme 'doom-city-lights t)
+  ;;(load-theme 'doom-city-lights t)
   (tooltip-mode -1))
+
+(use-package vs-light-theme
+  :config
+  (load-theme 'vs-light t))
+
 
 ;; Doom modeline is cool.
 (use-package doom-modeline
@@ -117,22 +122,22 @@
   :init (doom-modeline-mode t))
 
 
-;; dashboard
-(use-package dashboard
-  :after doom-themes
-  :config
-  (setq initial-buffer-choice (lambda () (get-buffer "*dashboard*")))
-  (dashboard-insert-startupify-lists)
-  (switch-to-buffer "*dashboard*"))
+;; ;; dashboard
+;; (use-package dashboard
+;;   :after doom-themes
+;;   :config
+;;   (setq initial-buffer-choice (lambda () (get-buffer "*dashboard*")))
+;;   (dashboard-insert-startupify-lists)
+;;   (switch-to-buffer "*dashboard*"))
 
 
-;; Apply emacs theme to terminals and rest of linux
-(use-package theme-magic
-  :ensure t
-  :after doom-themes
-  :config
-  (setq theme-magic--same-color-threshold 0.2)
-  (theme-magic-export-theme-mode))
+;; ;; Apply emacs theme to terminals and rest of linux
+;; (use-package theme-magic
+;;   :ensure t
+;;   :after doom-themes
+;;   :config
+;;   (setq theme-magic--same-color-threshold 0.2)
+;;   (theme-magic-export-theme-mode))
 
 
 (use-package display-line-numbers
@@ -235,17 +240,17 @@
 ;;   (selectrum-prescient-mode +1)
 ;;   (prescient-persist-mode +1))
 
-(use-package mini-frame
-  :ensure t
-  :config
-  (setq resize-mini-frames t)
-  (setq mini-frame-show-parameters
-	'((top . 0.3)
-	  (width . 0.5)
-	  (height . 0.3)
-	  (left . 0.5)
-	  (parent-frame . nil)))
-  (mini-frame-mode +1))
+;; (use-package mini-frame
+;;   :ensure t
+;;   :config
+;;   (setq resize-mini-frames t)
+;;   (setq mini-frame-show-parameters
+;; 	'((top . 0.3)
+;; 	  (width . 0.5)
+;; 	  (height . 0.3)
+;; 	  (left . 0.5)
+;; 	  (parent-frame . nil)))
+;;   (mini-frame-mode +1))
 
 (use-package ctrlf
   :after exwm
@@ -280,43 +285,43 @@
       window-divider-default-places t)
 (window-divider-mode)
 
-;; vterm
-;; Fast terminal within emacs
-(defun my/vterm-exit-hook (buffer process)
-  "Intelligently close window and frame when vterm (PROCESS) running in (BUFFER) exits."
-  (let ((window (get-buffer-window buffer)))
-    (when window
-      (let ((frame (window-frame window)))
-	(if (= 1 (length (window-list frame)))
-	    (delete-frame frame t)
-	  (delete-window window)))
-      (kill-buffer buffer))))
+;; ;; vterm
+;; ;; Fast terminal within emacs
+;; (defun my/vterm-exit-hook (buffer process)
+;;   "Intelligently close window and frame when vterm (PROCESS) running in (BUFFER) exits."
+;;   (let ((window (get-buffer-window buffer)))
+;;     (when window
+;;       (let ((frame (window-frame window)))
+;; 	(if (= 1 (length (window-list frame)))
+;; 	    (delete-frame frame t)
+;; 	  (delete-window window)))
+;;       (kill-buffer buffer))))
 
-(use-package vterm
-  :defer 1
-  :straight (vterm :type git :host github :repo "akermu/emacs-libvterm"
-		   :straight-default-files t)
-  :config
-  (setq vterm-shell (executable-find "fish")
-        vterm-kill-buffer-on-exit nil
-        vterm-buffer-name-string "vt:%s"
-        vterm-module-cmake-args "-DUSE_SYSTEM_LIBVTERM=no"
-        vterm-max-scrollback 100000
-	vterm-prompt-regexp "λ|$|#"
-	vterm-disable-bold-font t
-	vterm-disable-inverse-video t
-	vterm-term-environment-variable "xterm-24bit"
-	vterm-timer-delay 0.15
-	vterm-eval-cmds '(("find-file" find-file)
-			  ("message" message)
-			  ("vterm-clear-scrollback" vterm-clear-scrollback)
-			  ("man" man)
-			  ("make" compile)
-			  ("compile" compile)))
-  (add-hook 'vterm-mode-hook
-	    (lambda ()
-	      (vterm-send-string "source ~/emacs/vterm.fish\n")))
-  (add-hook 'vterm-exit-functions #'my/vterm-exit-hook))
+;; (use-package vterm
+;;   :defer 1
+;;   :straight (vterm :type git :host github :repo "akermu/emacs-libvterm"
+;; 		   :straight-default-files t)
+;;   :config
+;;   (setq vterm-shell (executable-find "fish")
+;;         vterm-kill-buffer-on-exit nil
+;;         vterm-buffer-name-string "vt:%s"
+;;         vterm-module-cmake-args "-DUSE_SYSTEM_LIBVTERM=no"
+;;         vterm-max-scrollback 100000
+;; 	vterm-prompt-regexp "λ|$|#"
+;; 	vterm-disable-bold-font t
+;; 	vterm-disable-inverse-video t
+;; 	vterm-term-environment-variable "xterm-24bit"
+;; 	vterm-timer-delay 0.15
+;; 	vterm-eval-cmds '(("find-file" find-file)
+;; 			  ("message" message)
+;; 			  ("vterm-clear-scrollback" vterm-clear-scrollback)
+;; 			  ("man" man)
+;; 			  ("make" compile)
+;; 			  ("compile" compile)))
+;;   (add-hook 'vterm-mode-hook
+;; 	    (lambda ()
+;; 	      (vterm-send-string "source ~/emacs/vterm.fish\n")))
+;;   (add-hook 'vterm-exit-functions #'my/vterm-exit-hook))
 
 ;Projectile projects
 (use-package projectile
@@ -691,45 +696,45 @@
   :config
   (exwm-mff-mode))
 
-(use-package ivy-posframe
-  :straight t
-  :after exwm
-  :custom-face
-  (ivy-posframe-border  ((t (:background "gray50"))))
-  :config
-  (setq ivy-posframe-display-functions-alist
-	'((swiper          . ivy-posframe-display-at-window-bottom-left)
-;          (complete-symbol . ivy-posframe-display-at-point)
-;         (counsel-M-x     . ivy-posframe-display-at-
-          (t               . ivy-posframe-display-at-frame-center))
-	ivy-posframe-parameters '((parent-frame .  nil)
-				  (left-fringe . 10)
-				  (right-fringe . 5)
-				  (internal-border-width . 1)
-				  (background-color . nil)
-		 		  (alpha . (95 . 95))
-				  ))
-  (ivy-posframe-mode))
+;; (use-package ivy-posframe
+;;   :straight t
+;;   :after exwm
+;;   :custom-face
+;;   (ivy-posframe-border  ((t (:background "gray50"))))
+;;   :config
+;;   (setq ivy-posframe-display-functions-alist
+;; 	'((swiper          . ivy-posframe-display-at-window-bottom-left)
+;; ;          (complete-symbol . ivy-posframe-display-at-point)
+;; ;         (counsel-M-x     . ivy-posframe-display-at-
+;;           (t               . ivy-posframe-display-at-frame-center))
+;; 	ivy-posframe-parameters '((parent-frame .  nil)
+;; 				  (left-fringe . 10)
+;; 				  (right-fringe . 5)
+;; 				  (internal-border-width . 1)
+;; 				  (background-color . nil)
+;; 		 		  (alpha . (95 . 95))
+;; 				  ))
+;;   (ivy-posframe-mode))
 
-(use-package which-key-posframe
-  :after exwm
-  :config
-  (setq which-key-posframe-poshandler 'posframe-poshandler-frame-center
-	which-key-posframe-parameters '((parent-frame . nil)
-					  (internal-border-width . 1)
-					  (left-fringe . 8)
-					  (right-fringe . 5)))
-  (which-key-posframe-mode))
+;; (use-package which-key-posframe
+;;   :after exwm
+;;   :config
+;;   (setq which-key-posframe-poshandler 'posframe-poshandler-frame-center
+;; 	which-key-posframe-parameters '((parent-frame . nil)
+;; 					  (internal-border-width . 1)
+;; 					  (left-fringe . 8)
+;; 					  (right-fringe . 5)))
+;;   (which-key-posframe-mode))
 
 
-(use-package pdf-tools
-  :config
-  (pdf-tools-install)
-  :hook
-  (pdf-view-mode . (lambda ()
-		     (pdf-view-midnight-minor-mode)
-		     (local-set-key (kbd "C-v") 'pdf-view-scroll-up-or-next-page)
-		     (local-set-key (kbd "M-v") 'pdf-view-scroll-down-or-previous-page))))
+;; (use-package pdf-tools
+;;   :config
+;;   (pdf-tools-install)
+;;   :hook
+;;   (pdf-view-mode . (lambda ()
+;; 		     (pdf-view-midnight-minor-mode)
+;; 		     (local-set-key (kbd "C-v") 'pdf-view-scroll-up-or-next-page)
+;; 		     (local-set-key (kbd "M-v") 'pdf-view-scroll-down-or-previous-page))))
 
 ;; (use-package equake
 ;;   :ensure t
@@ -797,11 +802,11 @@
 (defun my/toggle-eterm-8 () (interactive) (my/toggle-eterm--do-toggle 8))
 (defun my/toggle-eterm-9 () (interactive) (my/toggle-eterm--do-toggle 9))
 
-(use-package tab-bar
-  :ensure t
-  :config
-  (setq tab-bar-show nil)
-  :bind (("C-x t n" . 'tab-bar-switch-to-next-tab)
-	 ("C-x t p" . 'tab-bar-switch-to-prev-tab)
-	 ("C-x t t" . 'tab-bar-new-tab)
-	 ("C-x t d" . 'tab-bar-close-tab)))
+;; (use-package tab-bar
+;;   :ensure t
+;;   :config
+;;   (setq tab-bar-show nil)
+;;   :bind (("C-x t n" . 'tab-bar-switch-to-next-tab)
+;; 	 ("C-x t p" . 'tab-bar-switch-to-prev-tab)
+;; 	 ("C-x t t" . 'tab-bar-new-tab)
+;; 	 ("C-x t d" . 'tab-bar-close-tab)))
