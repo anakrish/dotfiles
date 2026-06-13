@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+set -euo pipefail
+
+niri msg -j focused-window 2>/dev/null | python3 -c '
+import html
+import json
+import sys
+
+try:
+    window = json.load(sys.stdin)
+except Exception:
+    print(json.dumps({"text": ""}))
+    raise SystemExit
+
+if not isinstance(window, dict):
+    print(json.dumps({"text": "Desktop", "tooltip": "Desktop", "class": "desktop"}))
+    raise SystemExit
+
+title = window.get("title") or ""
+app_id = window.get("app_id") or ""
+
+if not title and not app_id:
+    text = "Desktop"
+elif title and app_id and title != app_id:
+    text = f"{app_id} - {title}"
+else:
+    text = title or app_id
+
+print(json.dumps({
+    "text": text,
+    "tooltip": html.escape(text),
+    "class": "focused"
+}))
+'

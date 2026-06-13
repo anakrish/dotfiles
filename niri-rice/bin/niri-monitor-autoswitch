@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+
+set -euo pipefail
+
+builtin_output="${NIRI_BUILTIN_OUTPUT:-eDP-1}"
+poll_interval="${NIRI_MONITOR_AUTOSWITCH_INTERVAL:-2}"
+
+get_builtin_action() {
+    local outputs_json
+    outputs_json="$(niri msg -j outputs 2>/dev/null)" || return 1
+
+    OUTPUTS_JSON="$outputs_json" BUILTIN_OUTPUT="$builtin_output" python3 - <<'PY'
+import json
+import os
+
+outputs = json.loads(os.environ["OUTPUTS_JSON"])
+builtin = os.environ["BUILTIN_OUTPUT"]
+
+builtin_info = outputs.get(builtin)
+if builtin_info is None:
+    raise SystemExit
+
+external_enabled = any(
+    name != builtin and info.get("current_mode") is not None
+    for name, info in outputs.items()
+)
+builtin_enabled = builtin_info.get("current_mode") is not None
+want_builtin_enabled = not external_enabled
+
+if want_builtin_enabled != builtin_enabled:
+    print("on" if want_builtin_enabled else "off")
+PY
+}
+
+while true; do
+    action="$(get_builtin_action || true)"
+    if [[ -n "$action" ]]; then
+        niri msg output "$builtin_output" "$action" >/dev/null
+    fi
+
+    sleep "$poll_interval"
+done

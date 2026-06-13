@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+set -euo pipefail
+
+read_cpu() {
+    read -r _ user nice system idle iowait irq softirq steal _ < /proc/stat
+    local idle_all=$((idle + iowait))
+    local non_idle=$((user + nice + system + irq + softirq + steal))
+    local total=$((idle_all + non_idle))
+    local state="${XDG_RUNTIME_DIR:-/tmp}/waybar-system-cpu"
+
+    if [ -r "$state" ]; then
+        read -r prev_total prev_idle < "$state"
+        local total_delta=$((total - prev_total))
+        local idle_delta=$((idle_all - prev_idle))
+        if [ "$total_delta" -gt 0 ]; then
+            echo $((100 * (total_delta - idle_delta) / total_delta))
+        else
+            echo 0
+        fi
+    else
+        echo 0
+    fi
+
+    printf '%s %s\n' "$total" "$idle_all" > "$state"
+}
+
+read_mem() {
+    awk '
+        /^MemTotal:/ { total = $2 }
+        /^MemAvailable:/ { available = $2 }
+        END {
+            if (total > 0) {
+                printf "%d", (100 * (total - available)) / total
+            } else {
+                printf "0"
+            }
+        }
+    ' /proc/meminfo
+}
+
+read_temp() {
+    local path value
+    for path in /sys/class/thermal/thermal_zone*/temp /sys/class/hwmon/hwmon*/temp*_input; do
+        [ -r "$path" ] || continue
+        value="$(cat "$path")"
+        [ "$value" -gt 0 ] 2>/dev/null || continue
+        echo $((value / 1000))
+        return
+    done
+    echo "--"
+}
+
+cpu="$(read_cpu)"
+mem="$(read_mem)"
+temp="$(read_temp)"
+
+class="normal"
+if [ "$cpu" -ge 85 ] || [ "$mem" -ge 85 ] || { [ "$temp" != "--" ] && [ "$temp" -ge 80 ]; }; then
+    class="critical"
+elif [ "$cpu" -ge 65 ] || [ "$mem" -ge 70 ] || { [ "$temp" != "--" ] && [ "$temp" -ge 70 ]; }; then
+    class="warning"
+fi
+
+python3 -c '
+import json
+import sys
+
+cpu, mem, temp, klass = sys.argv[1:]
+print(json.dumps({
+    "text": f" {cpu}%   {mem}%   {temp}°",
+    "tooltip": f"CPU: {cpu}%\nMemory: {mem}%\nTemperature: {temp}°C",
+    "class": klass,
+}, ensure_ascii=False))
+' "$cpu" "$mem" "$temp" "$class"

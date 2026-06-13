@@ -39,10 +39,12 @@
       echo-keystrokes 0)
 
 ;; More general configuration
-(add-to-list 'default-frame-alist '(font .  "Iosevka Term:weight=normal:size=17"))
-(add-to-list 'default-frame-alist '(variable-pitch . "Iosevka:size=10"))
-					;(add-to-list 'default-frame-alist '(foreground-color . "#E0DFDB"))
-					;(add-to-list 'default-frame-alist '(background-color . "#2e3440"))
+;; Font configuration: GUI uses JetBrains Mono, terminal inherits from foot
+(if (display-graphic-p)
+    (progn
+      (add-to-list 'default-frame-alist '(font . "JetBrainsMono Nerd Font:weight=normal:size=14"))
+      (set-face-attribute 'variable-pitch nil :family "Monaspace Argon" :size 14))
+  (set-face-attribute 'default nil :family "JetBrainsMono Nerd Font Mono"))
 ;;(add-to-list 'default-frame-alist '(alpha . (95 . 95)))
 ;; Disable ui elements via frame parameters. Faster.
 (add-to-list 'default-frame-alist '(vertical-scroll-bars . nil))
@@ -106,12 +108,18 @@
 ;; Collection of pleasing themes
 (use-package doom-themes
   :config
-  ;;(load-theme 'doom-city-lights t)
+  (load-theme 'doom-nord t)
   (tooltip-mode -1))
 
-(use-package vs-light-theme
-  :config
-  (load-theme 'vs-light t))
+(use-package catppuccin-theme
+   :config
+   (setq catppuccin-flavor 'mocha)
+   ;;(load-theme 'catppuccin t)
+   (tooltip-mode -1))
+
+;;(use-package vs-light-theme
+;;  :config
+;;  (load-theme 'vs-light t))
 
 
 ;; Doom modeline is cool.
@@ -354,6 +362,10 @@
 	read-process-output-max (* 5 1024 1024)
 	lsp-completion-provider 'capf
 	lsp-idle-delay 0.500))
+
+(use-package rust-mode
+  :mode "\\.rs\\'"
+  :hook (rust-mode . lsp))
 
 
 ;; Only allow keyboard use.

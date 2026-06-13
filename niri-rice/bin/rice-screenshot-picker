@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+set -euo pipefail
+
+screenshots_dir="${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots"
+mkdir -p "$screenshots_dir"
+
+timestamp="$(date '+%Y-%m-%d %H-%M-%S')"
+selection="$(
+    printf '%s\n' \
+        "Area -> Clipboard" \
+        "Area -> Save" \
+        "Screen -> Clipboard" \
+        "Screen -> Save" \
+        "Window -> niri UI" \
+        "Interactive -> niri UI" |
+        fuzzel --dmenu --prompt="Screenshot: "
+)"
+
+[ -n "$selection" ] || exit 0
+
+case "$selection" in
+    "Area -> Clipboard")
+        geometry="$(slurp)"
+        grim -g "$geometry" - | wl-copy --type image/png
+        notify-send "Screenshot" "Area copied to clipboard"
+        ;;
+    "Area -> Save")
+        geometry="$(slurp)"
+        file="$screenshots_dir/Screenshot from $timestamp.png"
+        grim -g "$geometry" "$file"
+        notify-send "Screenshot saved" "$file"
+        ;;
+    "Screen -> Clipboard")
+        grim - | wl-copy --type image/png
+        notify-send "Screenshot" "Screen copied to clipboard"
+        ;;
+    "Screen -> Save")
+        file="$screenshots_dir/Screenshot from $timestamp.png"
+        grim "$file"
+        notify-send "Screenshot saved" "$file"
+        ;;
+    "Window -> niri UI")
+        niri msg action screenshot-window
+        ;;
+    "Interactive -> niri UI")
+        niri msg action screenshot
+        ;;
+esac

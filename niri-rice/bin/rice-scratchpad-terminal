@@ -1,0 +1,140 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+set -euo pipefail
+
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/niri-rice"
+window_id_file="$state_dir/scratchpad-window-id"
+mkdir -p "$state_dir"
+
+read -r current_workspace current_workspace_id <<< "$(
+    niri msg -j workspaces 2>/dev/null | python3 -c '
+import json
+import sys
+
+try:
+    workspaces = json.load(sys.stdin)
+except Exception:
+    raise SystemExit
+
+for workspace in workspaces:
+    if workspace.get("is_focused"):
+        print(workspace.get("name") or workspace.get("idx"), workspace.get("id"))
+        break
+'
+)"
+
+find_window() {
+    niri msg -j windows 2>/dev/null | python3 -c '
+import json
+import os
+import sys
+
+try:
+    windows = json.load(sys.stdin)
+except Exception:
+    raise SystemExit
+
+tracked = os.environ.get("RICE_SCRATCHPAD_WINDOW_ID")
+for window in windows:
+    if tracked and str(window.get("id")) == tracked:
+        print(window.get("id"), "focused" if window.get("is_focused") else "unfocused")
+        raise SystemExit
+
+for window in windows:
+    if window.get("app_id") == "rice-scratchpad" or window.get("title") == "Scratchpad":
+        print(window.get("id"), "focused" if window.get("is_focused") else "unfocused")
+        raise SystemExit
+
+fallback = [window for window in windows if window.get("app_id") == "Alacritty" and window.get("title") == "~"]
+if len(fallback) == 1:
+    window = fallback[0]
+    print(window.get("id"), "focused" if window.get("is_focused") else "unfocused")
+'
+}
+
+tracked_window_id=""
+if [ -f "$window_id_file" ]; then
+    tracked_window_id="$(cat "$window_id_file")"
+fi
+
+read -r window_id window_state <<< "$(
+    niri msg -j windows 2>/dev/null | RICE_SCRATCHPAD_WINDOW_ID="$tracked_window_id" CURRENT_WORKSPACE_ID="$current_workspace_id" python3 -c '
+import json
+import os
+import sys
+
+try:
+    windows = json.load(sys.stdin)
+except Exception:
+    raise SystemExit
+
+tracked = os.environ.get("RICE_SCRATCHPAD_WINDOW_ID")
+current_workspace_id = os.environ.get("CURRENT_WORKSPACE_ID")
+
+def emit(window):
+    state = "current" if window.get("is_focused") or str(window.get("workspace_id")) == current_workspace_id else "elsewhere"
+    print(window.get("id"), state)
+    raise SystemExit
+
+for window in windows:
+    if tracked and str(window.get("id")) == tracked:
+        emit(window)
+
+for window in windows:
+    if window.get("app_id") == "rice-scratchpad" or window.get("title") == "Scratchpad":
+        emit(window)
+
+fallback = [window for window in windows if window.get("app_id") == "Alacritty" and window.get("title") == "~"]
+if len(fallback) == 1:
+    emit(fallback[0])
+'
+)"
+
+if [ -n "$window_id" ]; then
+    printf '%s\n' "$window_id" > "$window_id_file"
+    if [ "$window_state" = "current" ]; then
+        niri msg action focus-window --id "$window_id" >/dev/null 2>&1 || true
+        niri msg action close-window
+        rm -f "$window_id_file"
+        exit 0
+    fi
+
+    niri msg action move-window-to-floating >/dev/null 2>&1 || true
+    niri msg action focus-window --id "$window_id"
+    exit 0
+fi
+
+alacritty \
+    --class rice-scratchpad \
+    --title "Scratchpad" \
+    --option window.dimensions.columns=110 \
+    --option window.dimensions.lines=30 \
+    --command tmux new-session -A -s scratchpad &
+
+alacritty_pid="$!"
+for _ in $(seq 1 20); do
+    window_id="$(
+        niri msg -j windows 2>/dev/null | ALACRITTY_PID="$alacritty_pid" python3 -c '
+import json
+import os
+import sys
+
+try:
+    windows = json.load(sys.stdin)
+except Exception:
+    raise SystemExit
+
+pid = int(os.environ["ALACRITTY_PID"])
+for window in windows:
+    if window.get("pid") == pid or window.get("app_id") == "rice-scratchpad" or window.get("title") == "Scratchpad":
+        print(window.get("id"))
+        break
+'
+    )"
+    if [ -n "$window_id" ]; then
+        printf '%s\n' "$window_id" > "$window_id_file"
+        niri msg action move-window-to-floating >/dev/null 2>&1 || true
+        exit 0
+    fi
+    sleep 0.25
+done

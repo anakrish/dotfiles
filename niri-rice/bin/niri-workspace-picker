@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+set -euo pipefail
+
+action="${1:-focus}"
+
+case "$action" in
+    focus|move-window|move-column) ;;
+    *)
+        echo "Usage: niri-workspace-picker [focus|move-window|move-column]" >&2
+        exit 1
+        ;;
+esac
+
+workspace_list="$(
+    niri msg -j workspaces 2>/dev/null | python3 -c '
+import json
+import sys
+
+try:
+    workspaces = json.load(sys.stdin)
+except Exception:
+    raise SystemExit
+
+for workspace in sorted(workspaces, key=lambda item: item.get("idx", 0)):
+    idx = workspace.get("idx", "")
+    name = workspace.get("name") or str(idx)
+    state = "focused" if workspace.get("is_focused") else "active" if workspace.get("active_window_id") is not None else "empty"
+    print(f"{idx}: {name} [{state}]")
+'
+)"
+
+selection="$(
+    {
+        printf '%s\n' "$workspace_list"
+        printf '%s\n' "new: name current workspace"
+    } | fuzzel --dmenu --prompt="Workspace: "
+)"
+
+[ -n "$selection" ] || exit 0
+
+if [ "$selection" = "new: name current workspace" ]; then
+    exec "$HOME/.local/bin/niri-rename-workspace"
+fi
+
+workspace="${selection#*: }"
+workspace="${workspace% \[*}"
+[ -n "$workspace" ] || exit 0
+
+case "$action" in
+    focus)
+        niri msg action focus-workspace "$workspace"
+        ;;
+    move-window)
+        niri msg action move-window-to-workspace "$workspace"
+        ;;
+    move-column)
+        niri msg action move-column-to-workspace "$workspace"
+        ;;
+esac

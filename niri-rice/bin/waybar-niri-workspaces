@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+set -euo pipefail
+
+niri msg -j workspaces 2>/dev/null | python3 -c '
+import html
+import json
+import sys
+
+try:
+    workspaces = json.load(sys.stdin)
+except Exception:
+    print(json.dumps({"text": ""}))
+    raise SystemExit
+
+items = []
+tooltip_items = []
+for workspace in sorted(workspaces, key=lambda item: item.get("idx", 0)):
+    name = workspace.get("name") or str(workspace.get("idx", ""))
+    if name == "__scratchpad":
+        continue
+    label = html.escape(name)
+    tooltip_items.append(("*" if workspace.get("is_focused") else " ") + f" {name}")
+
+    if workspace.get("is_urgent"):
+        items.append(f"<span color=\"#bf616a\">● {label}</span>")
+    elif workspace.get("is_focused"):
+        items.append(f"<b>● {label}</b>")
+    elif workspace.get("active_window_id") is not None:
+        items.append(f"◐ {label}")
+    else:
+        items.append(f"○ {label}")
+
+print(json.dumps({
+    "text": "  ".join(items),
+    "tooltip": "\n".join(tooltip_items),
+    "class": "focused"
+}))
+'

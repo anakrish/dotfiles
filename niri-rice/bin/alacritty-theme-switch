@@ -1,0 +1,372 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+set -euo pipefail
+
+config="${XDG_CONFIG_HOME:-$HOME/.config}/alacritty/alacritty.toml"
+themes_dir="${XDG_CONFIG_HOME:-$HOME/.config}/alacritty/themes"
+niri_config="${XDG_CONFIG_HOME:-$HOME/.config}/niri/config.kdl"
+waybar_colors="${XDG_CONFIG_HOME:-$HOME/.config}/waybar/colors.css"
+mako_config="${XDG_CONFIG_HOME:-$HOME/.config}/mako/config"
+fuzzel_config="${XDG_CONFIG_HOME:-$HOME/.config}/fuzzel/fuzzel.ini"
+shell_prompt_dir="${XDG_CONFIG_HOME:-$HOME/.config}/shell-prompt"
+ghostty_config="${XDG_CONFIG_HOME:-$HOME/.config}/ghostty/config"
+
+usage() {
+    cat <<'USAGE'
+Usage: alacritty-theme-switch [theme]
+
+Themes:
+  nord
+  catppuccin-mocha
+  tokyo-night
+  gruvbox-dark
+  dracula
+  kanagawa
+  everforest-dark
+  one-dark
+  ayu-mirage
+  rose-pine-moon
+  solarized-dark
+USAGE
+}
+
+normalize_theme() {
+    case "$1" in
+        Nord|nord) echo "nord" ;;
+        "Catppuccin Mocha"|catppuccin|catppuccin-mocha) echo "catppuccin-mocha" ;;
+        "Tokyo Night"|tokyo|tokyonight|tokyo-night) echo "tokyo-night" ;;
+        "Gruvbox Dark"|gruvbox|gruvbox-dark) echo "gruvbox-dark" ;;
+        Dracula|dracula) echo "dracula" ;;
+        Kanagawa|kanagawa) echo "kanagawa" ;;
+        "Everforest Dark"|everforest|everforest-dark) echo "everforest-dark" ;;
+        "One Dark"|onedark|one-dark) echo "one-dark" ;;
+        "Ayu Mirage"|ayu|ayu-mirage) echo "ayu-mirage" ;;
+        "Rose Pine Moon"|rose-pine|rose-pine-moon) echo "rose-pine-moon" ;;
+        "Solarized Dark"|solarized|solarized-dark) echo "solarized-dark" ;;
+        *) return 1 ;;
+    esac
+}
+
+choose_theme() {
+    if ! command -v fuzzel >/dev/null 2>&1; then
+        usage >&2
+        exit 1
+    fi
+
+    printf '%s\n' \
+        "Nord" \
+        "Catppuccin Mocha" \
+        "Tokyo Night" \
+        "Gruvbox Dark" \
+        "Dracula" \
+        "Kanagawa" \
+        "Everforest Dark" \
+        "One Dark" \
+        "Ayu Mirage" \
+        "Rose Pine Moon" \
+        "Solarized Dark" |
+        fuzzel --dmenu --prompt="Alacritty theme: "
+}
+
+theme_colors() {
+    case "$1" in
+        nord) echo "#2e3440 #3b4252 #434c5e #d8dee9 #4c566a #81a1c1 #88c0d0 #ebcb8b #bf616a #a3be8c #ebcb8b #81a1c1 #b48ead #88c0d0" ;;
+        catppuccin-mocha) echo "#1e1e2e #313244 #45475a #cdd6f4 #6c7086 #cba6f7 #89dceb #f9e2af #f38ba8 #a6e3a1 #f9e2af #89b4fa #cba6f7 #89dceb" ;;
+        tokyo-night) echo "#1a1b26 #24283b #414868 #c0caf5 #565f89 #7aa2f7 #bb9af7 #e0af68 #f7768e #9ece6a #e0af68 #7aa2f7 #bb9af7 #7dcfff" ;;
+        gruvbox-dark) echo "#282828 #3c3836 #504945 #ebdbb2 #665c54 #d79921 #458588 #fabd2f #fb4934 #b8bb26 #fabd2f #83a598 #d3869b #8ec07c" ;;
+        dracula) echo "#282a36 #343746 #44475a #f8f8f2 #6272a4 #bd93f9 #ff79c6 #f1fa8c #ff5555 #50fa7b #f1fa8c #8be9fd #ff79c6 #8be9fd" ;;
+        kanagawa) echo "#1f1f28 #2a2a37 #363646 #dcd7ba #727169 #7e9cd8 #957fb8 #e6c384 #c34043 #76946a #c0a36e #7e9cd8 #957fb8 #6a9589" ;;
+        everforest-dark) echo "#2b3339 #323c41 #4b565c #d3c6aa #5c6a72 #a7c080 #7fbbb3 #dbbc7f #e67e80 #a7c080 #dbbc7f #7fbbb3 #d699b6 #83c092" ;;
+        one-dark) echo "#282c34 #2c313c #3e4451 #abb2bf #5c6370 #61afef #c678dd #e5c07b #e06c75 #98c379 #e5c07b #61afef #c678dd #56b6c2" ;;
+        ayu-mirage) echo "#1f2430 #242936 #33415e #cbccc6 #707a8c #ffcc66 #73d0ff #ffa759 #ff3333 #bae67e #ffcc66 #73d0ff #d4bfff #95e6cb" ;;
+        rose-pine-moon) echo "#232136 #2a273f #393552 #e0def4 #6e6a86 #c4a7e7 #9ccfd8 #f6c177 #eb6f92 #3e8fb0 #f6c177 #9ccfd8 #c4a7e7 #ea9a97" ;;
+        solarized-dark) echo "#002b36 #073642 #094352 #839496 #586e75 #268bd2 #2aa198 #b58900 #dc322f #859900 #b58900 #268bd2 #d33682 #2aa198" ;;
+        *) return 1 ;;
+    esac
+}
+
+set_niri_colors() {
+    local theme="$1"
+    local background surface surface_alt text muted from to warning error
+    read -r background surface surface_alt text muted from to warning error <<< "$(theme_colors "$theme")"
+
+    if [ ! -f "$niri_config" ]; then
+        return
+    fi
+
+    sed -i \
+        -e "s|backdrop-color \"#[^\"]*\"|backdrop-color \"$background\"|g" \
+        -e "s|active-gradient from=\"#[^\"]*\" to=\"#[^\"]*\" angle=135|active-gradient from=\"$from\" to=\"$to\" angle=135|" \
+        "$niri_config"
+
+    if command -v niri >/dev/null 2>&1 && [ -n "${NIRI_SOCKET:-}" ]; then
+        niri msg action reload-config >/dev/null 2>&1 || true
+    fi
+}
+
+set_waybar_colors() {
+    local theme="$1"
+    local background surface surface_alt text muted accent accent_alt warning error green yellow blue magenta cyan
+    read -r background surface surface_alt text muted accent accent_alt warning error green yellow blue magenta cyan <<< "$(theme_colors "$theme")"
+
+    mkdir -p "$(dirname "$waybar_colors")"
+    cat > "$waybar_colors" <<EOF
+@define-color theme_bg $background;
+@define-color theme_surface $surface;
+@define-color theme_surface_alt $surface_alt;
+@define-color theme_text $text;
+@define-color theme_muted $muted;
+@define-color theme_accent $accent;
+@define-color theme_accent_alt $accent_alt;
+@define-color theme_warning $warning;
+@define-color theme_error $error;
+@define-color theme_green $green;
+@define-color theme_yellow $yellow;
+@define-color theme_blue $blue;
+@define-color theme_magenta $magenta;
+@define-color theme_cyan $cyan;
+EOF
+
+    if command -v pidof >/dev/null 2>&1; then
+        for pid in $(pidof waybar 2>/dev/null); do
+            kill -SIGUSR2 "$pid" 2>/dev/null || true
+        done
+    fi
+}
+
+set_mako_colors() {
+    local theme="$1"
+    local background surface surface_alt text muted accent accent_alt warning error green yellow blue magenta cyan
+    read -r background surface surface_alt text muted accent accent_alt warning error green yellow blue magenta cyan <<< "$(theme_colors "$theme")"
+
+    mkdir -p "$(dirname "$mako_config")"
+    cat > "$mako_config" <<EOF
+font=JetBrainsMono Nerd Font Mono 11
+width=460
+height=190
+margin=18
+padding=16,18
+border-size=4
+border-radius=16
+max-visible=4
+default-timeout=5000
+ignore-timeout=0
+anchor=top-right
+icons=1
+max-icon-size=48
+markup=1
+actions=1
+history=1
+background-color=${background}f6
+text-color=${text}ff
+border-color=${magenta}ff
+progress-color=over ${accent_alt}ff
+format=<b>%s</b>\n%b
+
+[urgency=low]
+default-timeout=3000
+background-color=${surface}e8
+border-color=${cyan}cc
+
+[urgency=critical]
+default-timeout=0
+background-color=${surface_alt}fa
+border-color=${error}ff
+EOF
+
+    if command -v makoctl >/dev/null 2>&1; then
+        makoctl reload >/dev/null 2>&1 || true
+    fi
+}
+
+set_fuzzel_colors() {
+    local theme="$1"
+    local background surface surface_alt text muted accent accent_alt warning error green yellow blue magenta cyan
+    read -r background surface surface_alt text muted accent accent_alt warning error green yellow blue magenta cyan <<< "$(theme_colors "$theme")"
+
+    mkdir -p "$(dirname "$fuzzel_config")"
+    cat > "$fuzzel_config" <<EOF
+[main]
+font=JetBrainsMono Nerd Font Mono:weight=medium:size=12
+width=44
+lines=12
+tabs=4
+horizontal-pad=20
+vertical-pad=14
+inner-pad=10
+line-height=20
+letter-spacing=0
+terminal=alacritty
+layer=overlay
+icon-theme=Papirus-Dark
+
+[border]
+width=3
+radius=16
+
+[colors]
+background=${background#"#"}f2
+text=${text#"#"}ff
+match=${cyan#"#"}ff
+selection=${surface#"#"}f6
+selection-text=${text#"#"}ff
+selection-match=${magenta#"#"}ff
+border=${magenta#"#"}ff
+EOF
+}
+
+rgb_triplet() {
+    local hex="${1#"#"}"
+    printf '%d;%d;%d' "0x${hex:0:2}" "0x${hex:2:2}" "0x${hex:4:2}"
+}
+
+set_shell_prompt_colors() {
+    local theme="$1"
+    local background surface surface_alt text muted accent accent_alt warning error green yellow blue magenta cyan
+    read -r background surface surface_alt text muted accent accent_alt warning error green yellow blue magenta cyan <<< "$(theme_colors "$theme")"
+
+    mkdir -p "$shell_prompt_dir"
+    cat > "$shell_prompt_dir/colors.sh" <<EOF
+export RICE_BG_RGB="$(rgb_triplet "$background")"
+export RICE_BG_HEX="${background#"#"}"
+export RICE_SURFACE_RGB="$(rgb_triplet "$surface")"
+export RICE_SURFACE_HEX="${surface#"#"}"
+export RICE_TEXT_RGB="$(rgb_triplet "$text")"
+export RICE_TEXT_HEX="${text#"#"}"
+export RICE_MUTED_RGB="$(rgb_triplet "$muted")"
+export RICE_MUTED_HEX="${muted#"#"}"
+export RICE_GREEN_RGB="$(rgb_triplet "$green")"
+export RICE_GREEN_HEX="${green#"#"}"
+export RICE_YELLOW_RGB="$(rgb_triplet "$yellow")"
+export RICE_YELLOW_HEX="${yellow#"#"}"
+export RICE_BLUE_RGB="$(rgb_triplet "$blue")"
+export RICE_BLUE_HEX="${blue#"#"}"
+export RICE_MAGENTA_RGB="$(rgb_triplet "$magenta")"
+export RICE_MAGENTA_HEX="${magenta#"#"}"
+export RICE_CYAN_RGB="$(rgb_triplet "$cyan")"
+export RICE_CYAN_HEX="${cyan#"#"}"
+export RICE_ERROR_RGB="$(rgb_triplet "$error")"
+export RICE_ERROR_HEX="${error#"#"}"
+EOF
+
+    cat > "$shell_prompt_dir/colors.fish" <<EOF
+set -gx RICE_BG_RGB "$(rgb_triplet "$background")"
+set -gx RICE_BG_HEX "${background#"#"}"
+set -gx RICE_SURFACE_RGB "$(rgb_triplet "$surface")"
+set -gx RICE_SURFACE_HEX "${surface#"#"}"
+set -gx RICE_TEXT_RGB "$(rgb_triplet "$text")"
+set -gx RICE_TEXT_HEX "${text#"#"}"
+set -gx RICE_MUTED_RGB "$(rgb_triplet "$muted")"
+set -gx RICE_MUTED_HEX "${muted#"#"}"
+set -gx RICE_GREEN_RGB "$(rgb_triplet "$green")"
+set -gx RICE_GREEN_HEX "${green#"#"}"
+set -gx RICE_YELLOW_RGB "$(rgb_triplet "$yellow")"
+set -gx RICE_YELLOW_HEX "${yellow#"#"}"
+set -gx RICE_BLUE_RGB "$(rgb_triplet "$blue")"
+set -gx RICE_BLUE_HEX "${blue#"#"}"
+set -gx RICE_MAGENTA_RGB "$(rgb_triplet "$magenta")"
+set -gx RICE_MAGENTA_HEX "${magenta#"#"}"
+set -gx RICE_CYAN_RGB "$(rgb_triplet "$cyan")"
+set -gx RICE_CYAN_HEX "${cyan#"#"}"
+set -gx RICE_ERROR_RGB "$(rgb_triplet "$error")"
+set -gx RICE_ERROR_HEX "${error#"#"}"
+EOF
+}
+
+set_gtk_theme() {
+    local theme="$1"
+    local gtk_theme="Adwaita-dark"
+    local icon_theme="Papirus-Dark"
+
+    case "$theme" in
+        catppuccin-mocha)
+            gtk_theme="catppuccin-mocha-mauve-standard+default"
+            ;;
+        ayu-mirage)
+            gtk_theme="Ayu-Dark"
+            icon_theme="ePapirus-Dark"
+            ;;
+        tokyo-night)
+            gtk_theme="TokyoNight"
+            ;;
+    esac
+
+    if command -v gsettings >/dev/null 2>&1; then
+        gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' >/dev/null 2>&1 || true
+        gsettings set org.gnome.desktop.interface gtk-theme "$gtk_theme" >/dev/null 2>&1 || true
+        gsettings set org.gnome.desktop.interface icon-theme "$icon_theme" >/dev/null 2>&1 || true
+    fi
+}
+
+set_ghostty_theme() {
+    local theme="$1"
+    local ghostty_theme=""
+
+    case "$theme" in
+        nord) ghostty_theme="Nord" ;;
+        catppuccin-mocha) ghostty_theme="Catppuccin Mocha" ;;
+        tokyo-night) ghostty_theme="TokyoNight" ;;
+        gruvbox-dark) ghostty_theme="GruvboxDark" ;;
+        dracula) ghostty_theme="Dracula" ;;
+        ayu-mirage) ghostty_theme="Ayu" ;;
+    esac
+
+    if [ -n "$ghostty_theme" ] && [ -f "$ghostty_config" ]; then
+        if grep -q '^theme = ' "$ghostty_config"; then
+            sed -i "s|^theme = .*|theme = $ghostty_theme|" "$ghostty_config"
+        else
+            printf 'theme = %s\n' "$ghostty_theme" >> "$ghostty_config"
+        fi
+    fi
+}
+
+selection="${1:-}"
+if [ -z "$selection" ]; then
+    selection="$(choose_theme)"
+fi
+
+if [ -z "$selection" ]; then
+    exit 0
+fi
+
+theme="$(normalize_theme "$selection")" || {
+    usage >&2
+    exit 1
+}
+
+theme_file="$themes_dir/$theme.toml"
+if [ ! -f "$theme_file" ]; then
+    echo "Missing theme file: $theme_file" >&2
+    exit 1
+fi
+
+mkdir -p "$(dirname "$config")"
+tmp="$(mktemp)"
+import_line="import = [\"~/.config/alacritty/themes/$theme.toml\"]"
+
+if [ -f "$config" ]; then
+    if grep -q '^import = \["~/.config/alacritty/themes/.*\.toml"\]' "$config"; then
+        sed "s|^import = \\[\"~/.config/alacritty/themes/.*\\.toml\"\\]|$import_line|" "$config" > "$tmp"
+    else
+        {
+            printf '%s\n' "$import_line"
+            cat "$config"
+        } > "$tmp"
+    fi
+else
+    printf '%s\n' "$import_line" > "$tmp"
+fi
+
+mv "$tmp" "$config"
+set_niri_colors "$theme"
+set_waybar_colors "$theme"
+set_mako_colors "$theme"
+set_fuzzel_colors "$theme"
+set_shell_prompt_colors "$theme"
+set_gtk_theme "$theme"
+set_ghostty_theme "$theme"
+echo "Alacritty theme: $theme"
+
+if command -v notify-send >/dev/null 2>&1; then
+    notify-send "Alacritty theme" "$theme"
+fi

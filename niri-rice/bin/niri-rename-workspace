@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+set -euo pipefail
+
+current_name="$(
+    niri msg -j workspaces 2>/dev/null | python3 -c '
+import json
+import sys
+
+try:
+    workspaces = json.load(sys.stdin)
+except Exception:
+    raise SystemExit
+
+for workspace in workspaces:
+    if workspace.get("is_focused"):
+        print(workspace.get("name") or "")
+        break
+'
+)"
+
+choices="$(
+    {
+        [ -n "$current_name" ] && printf '%s\n' "$current_name"
+        printf '%s\n' \
+            "project" \
+            "debug" \
+            "review" \
+            "docs" \
+            "research" \
+            "meeting" \
+            "mail" \
+            "scratch" \
+            "unset workspace name"
+    } | awk 'NF && !seen[$0]++'
+)"
+
+selection="$(
+    printf '%s\n' "$choices" |
+        fuzzel --dmenu --prompt="Workspace name: "
+)"
+
+case "$selection" in
+    "")
+        exit 0
+        ;;
+    "unset workspace name")
+        niri msg action unset-workspace-name
+        message="Workspace name unset"
+        ;;
+    *)
+        niri msg action set-workspace-name "$selection"
+        message="Workspace renamed: $selection"
+        ;;
+esac
+
+if command -v notify-send >/dev/null 2>&1; then
+    notify-send "niri workspace" "$message"
+fi

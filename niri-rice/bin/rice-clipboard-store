@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+set -euo pipefail
+
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/niri-rice"
+history_file="$state_dir/clipboard.jsonl"
+mkdir -p "$state_dir"
+
+RICE_CLIPBOARD_HISTORY="$history_file" python3 -c '
+import hashlib
+import json
+import os
+import pathlib
+import sys
+import time
+
+path = pathlib.Path(os.environ["RICE_CLIPBOARD_HISTORY"])
+text = sys.stdin.read()
+text = text.replace("\x00", "").strip()
+if not text:
+    raise SystemExit
+
+if len(text) > 20000:
+    text = text[:20000]
+
+digest = hashlib.sha256(text.encode("utf-8", "replace")).hexdigest()
+entries = []
+if path.exists():
+    for line in path.read_text(errors="replace").splitlines():
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if entry.get("hash") != digest:
+            entries.append(entry)
+
+preview = " ".join(text.split())
+if len(preview) > 140:
+    preview = preview[:137] + "..."
+
+entries.append({
+    "time": int(time.time()),
+    "hash": digest,
+    "preview": preview,
+    "text": text,
+})
+
+entries = entries[-100:]
+path.write_text("".join(json.dumps(entry, ensure_ascii=False) + "\n" for entry in entries))
+'

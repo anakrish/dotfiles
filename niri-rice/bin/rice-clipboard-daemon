@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+set -euo pipefail
+
+exec wl-paste --type text --watch "$HOME/.local/bin/rice-clipboard-store"

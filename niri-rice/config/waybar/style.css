@@ -1,0 +1,227 @@
+@import "colors.css";
+
+* {
+    border: none;
+    border-radius: 0;
+    font-family: "JetBrainsMono Nerd Font Mono", "Hack Nerd Font Mono", monospace;
+    font-size: 15px;
+    min-height: 0;
+}
+
+window#waybar {
+    background: transparent;
+    color: @theme_text;
+}
+
+window#waybar > box {
+    margin: 8px 12px 0;
+    padding: 5px;
+    border-radius: 18px;
+    background:
+        linear-gradient(135deg, alpha(@theme_blue, 0.20), alpha(@theme_magenta, 0.16), alpha(@theme_cyan, 0.10)),
+        alpha(@theme_bg, 0.86);
+    border: 1px solid alpha(@theme_accent, 0.45);
+    box-shadow: 0 8px 22px alpha(@theme_bg, 0.45);
+}
+
+#workspaces,
+#custom-niri-workspaces,
+#taskbar,
+#custom-niri-window,
+#mpris,
+#clock,
+#battery,
+#custom-system,
+#backlight,
+#network,
+#pulseaudio,
+#wireplumber,
+#tray,
+#mode,
+#idle_inhibitor,
+#custom-power,
+#custom-notification,
+#custom-media {
+    margin: 0 3px;
+    padding: 5px 11px;
+    border-radius: 12px;
+    background:
+        linear-gradient(180deg, alpha(@theme_surface_alt, 0.70), alpha(@theme_surface, 0.82));
+    color: @theme_text;
+    border-bottom: 2px solid alpha(@theme_accent, 0.30);
+    box-shadow: inset 0 1px alpha(@theme_text, 0.08);
+}
+
+#workspaces {
+    padding: 2px 4px;
+    background: alpha(@theme_bg, 0.35);
+    border-bottom-color: alpha(@theme_accent_alt, 0.40);
+}
+
+#custom-niri-workspaces {
+    color: @theme_cyan;
+    padding: 5px 12px;
+    background:
+        linear-gradient(135deg, alpha(@theme_blue, 0.16), alpha(@theme_magenta, 0.10)),
+        alpha(@theme_bg, 0.35);
+    border-left: 3px solid @theme_blue;
+    border-bottom-color: alpha(@theme_magenta, 0.55);
+    font-size: 16px;
+    font-weight: 700;
+}
+
+#taskbar {
+    padding: 2px 5px;
+    background: alpha(@theme_bg, 0.32);
+    border-bottom-color: alpha(@theme_magenta, 0.45);
+}
+
+#workspaces button {
+    margin: 0 2px;
+    padding: 4px 9px;
+    border-radius: 11px;
+    background: transparent;
+    color: @theme_text;
+    border-bottom: 2px solid transparent;
+}
+
+#taskbar button {
+    margin: 0 2px;
+    padding: 4px 7px;
+    border-radius: 10px;
+    background: transparent;
+    border-bottom: 2px solid transparent;
+}
+
+#workspaces button.focused,
+#workspaces button.active {
+    background: linear-gradient(135deg, @theme_blue, @theme_magenta);
+    color: @theme_bg;
+    border-bottom-color: alpha(@theme_text, 0.35);
+    box-shadow:
+        inset 0 1px alpha(@theme_text, 0.22),
+        0 0 10px alpha(@theme_accent, 0.35);
+}
+
+#taskbar button.active {
+    background: linear-gradient(135deg, alpha(@theme_magenta, 0.78), alpha(@theme_blue, 0.65));
+    border-bottom-color: alpha(@theme_text, 0.35);
+    box-shadow:
+        inset 0 1px alpha(@theme_text, 0.20),
+        0 0 10px alpha(@theme_magenta, 0.28);
+}
+
+#taskbar button:hover {
+    background: alpha(@theme_surface_alt, 0.92);
+}
+
+#workspaces button.urgent,
+#battery.critical,
+#temperature.critical {
+    background: @theme_error;
+    color: @theme_bg;
+}
+
+#workspaces button:hover,
+#clock:hover,
+#battery:hover,
+#cpu:hover,
+#memory:hover,
+#network:hover,
+#pulseaudio:hover,
+#wireplumber:hover,
+#tray:hover {
+    background: alpha(@theme_surface_alt, 0.92);
+}
+
+#custom-niri-window {
+    color: @theme_text;
+    background: transparent;
+    border-bottom-color: transparent;
+    box-shadow: none;
+    font-weight: 600;
+}
+
+#mpris {
+    color: @theme_magenta;
+    border-left: 3px solid @theme_magenta;
+    border-bottom-color: alpha(@theme_magenta, 0.60);
+    background:
+        linear-gradient(135deg, alpha(@theme_magenta, 0.14), alpha(@theme_cyan, 0.08)),
+        alpha(@theme_surface, 0.72);
+}
+
+#mode,
+#idle_inhibitor.activated {
+    background: linear-gradient(135deg, @theme_accent, @theme_accent_alt);
+    color: @theme_bg;
+}
+
+#battery.warning,
+#pulseaudio.muted,
+#wireplumber.muted {
+    background:
+        linear-gradient(180deg, alpha(@theme_surface_alt, 0.70), alpha(@theme_surface, 0.82));
+    color: @theme_yellow;
+    border-left-color: @theme_yellow;
+    border-bottom-color: alpha(@theme_yellow, 0.65);
+}
+
+#clock {
+    font-weight: 700;
+    color: @theme_cyan;
+    border-left: 3px solid @theme_blue;
+    border-bottom-color: @theme_cyan;
+    background:
+        linear-gradient(135deg, alpha(@theme_blue, 0.18), alpha(@theme_cyan, 0.10)),
+        alpha(@theme_surface, 0.72);
+}
+
+#network {
+    border-left: 3px solid @theme_green;
+    border-bottom-color: alpha(@theme_green, 0.65);
+    background:
+        linear-gradient(135deg, alpha(@theme_green, 0.16), alpha(@theme_cyan, 0.08)),
+        alpha(@theme_surface, 0.72);
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+#pulseaudio,
+#wireplumber {
+    border-left: 3px solid @theme_magenta;
+    border-bottom-color: alpha(@theme_magenta, 0.65);
+    background:
+        linear-gradient(135deg, alpha(@theme_magenta, 0.16), alpha(@theme_blue, 0.08)),
+        alpha(@theme_surface, 0.72);
+}
+
+#custom-system {
+    border-left: 3px solid @theme_blue;
+    border-bottom-color: alpha(@theme_magenta, 0.65);
+    background:
+        linear-gradient(135deg, alpha(@theme_blue, 0.14), alpha(@theme_magenta, 0.10), alpha(@theme_error, 0.06)),
+        alpha(@theme_surface, 0.72);
+}
+
+#custom-system.warning {
+    color: @theme_yellow;
+    border-left-color: @theme_yellow;
+}
+
+#custom-system.critical {
+    color: @theme_error;
+    border-left-color: @theme_error;
+}
+
+#battery {
+    border-left: 3px solid @theme_green;
+    border-bottom-color: alpha(@theme_green, 0.65);
+    background:
+        linear-gradient(135deg, alpha(@theme_green, 0.14), alpha(@theme_yellow, 0.06)),
+        alpha(@theme_surface, 0.72);
+}
+
+#tray {
+    background: alpha(@theme_bg, 0.45);
+}
