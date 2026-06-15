@@ -4,7 +4,7 @@ This profile installs the niri desktop setup used on the Linux workstation:
 
 - niri config with named workspaces, themed backdrop/focus ring, workspace pickers, and theme switching
 - Alacritty themes and `Mod+Shift+T` theme switcher, plus optional Ghostty/Foot terminal configs
-- Waybar top bar with niri workspaces, taskbar, focused window, compact system pill, battery, clock, and tray
+- Waybar top bar config with niri workspaces, taskbar, focused window, compact system pill, battery, clock, and tray
 - fuzzel launcher and workspace/task pickers
 - scratchpad terminal, screenshot picker, and lightweight clipboard history picker
 - mako notification styling and auto-dismiss behavior
@@ -13,7 +13,7 @@ This profile installs the niri desktop setup used on the Linux workstation:
 - Emacs `init.el`, including `doom-nord` and Rust mode support
 - GTK dark mode/icon defaults and Copilot CLI dark/default color mode
 
-Waybar is started through `niri-rice-waybar`, which stops any existing Waybar process for the current user before launching the rice bar. This prevents the distro/default Waybar and the rice Waybar from appearing at the same time on a fresh machine.
+The niri config does not start Waybar directly. This avoids duplicate bars on systems where the niri session or distro already starts Waybar; the installed `~/.config/waybar` files make that existing Waybar use the rice styling.
 
 ## Install
 
