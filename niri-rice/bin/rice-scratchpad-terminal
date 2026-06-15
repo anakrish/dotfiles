@@ -11,8 +11,8 @@ Behaviour (a real show/hide toggle, no workspace jumping):
     session) on the current workspace.
 
 The stash workspace must be declared persistently in the niri config
-(`workspace "scratchpad"`), otherwise `move-window-to-workspace "scratchpad"`
-silently does nothing.
+(`workspace "__scratchpad"`), otherwise `move-window-to-workspace
+"__scratchpad"` silently does nothing.
 """
 
 import json
@@ -21,7 +21,7 @@ import subprocess
 import sys
 import time
 
-STASH_WS = "scratchpad"
+STASH_WS = "__scratchpad"
 APP_ID = "rice-scratchpad"
 TITLE = "Scratchpad"
 

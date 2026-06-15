@@ -25,6 +25,8 @@ except Exception:
 for workspace in sorted(workspaces, key=lambda item: item.get("idx", 0)):
     idx = workspace.get("idx", "")
     name = workspace.get("name") or str(idx)
+    if name == "__scratchpad":
+        continue
     state = "focused" if workspace.get("is_focused") else "active" if workspace.get("active_window_id") is not None else "empty"
     print(f"{idx}: {name} [{state}]")
 '
