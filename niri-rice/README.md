@@ -13,6 +13,8 @@ This profile installs the niri desktop setup used on the Linux workstation:
 - Emacs `init.el`, including `doom-nord` and Rust mode support
 - GTK dark mode/icon defaults and Copilot CLI dark/default color mode
 
+Waybar is started through `niri-rice-waybar`, which stops any existing Waybar process for the current user before launching the rice bar. This prevents the distro/default Waybar and the rice Waybar from appearing at the same time on a fresh machine.
+
 ## Install
 
 ```bash

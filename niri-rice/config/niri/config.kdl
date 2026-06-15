@@ -167,7 +167,7 @@ layout {
 
 // This line starts waybar, a commonly used bar for Wayland compositors.
 spawn-sh-at-startup "test ! -x \"$HOME/.local/bin/niri-monitor-autoswitch\" || \"$HOME/.local/bin/niri-monitor-autoswitch\""
-spawn-sh-at-startup "waybar -c \"$HOME/.config/waybar/config\" -s \"$HOME/.config/waybar/style.css\""
+spawn-sh-at-startup "$HOME/.local/bin/niri-rice-waybar"
 spawn-sh-at-startup "$HOME/.local/bin/rice-clipboard-daemon"
 
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
