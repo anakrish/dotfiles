@@ -4,15 +4,18 @@
 
 Behaviour (a real show/hide toggle, no workspace jumping):
   * If the scratchpad window is on the *current* workspace -> hide it by
-    moving it to the persistent "scratchpad" stash workspace (focus stays put).
-  * If it exists elsewhere (the stash or another workspace) -> show it by
+    moving it to the bottom (always-empty) workspace of the focused output,
+    so it sits last in the workspace stack and never takes index 1.
+  * If it exists elsewhere (stashed or on another workspace) -> show it by
     moving it to the current workspace, floating it, and focusing it.
   * If it does not exist yet -> spawn it (Alacritty + a persistent tmux
     session) on the current workspace.
 
-The stash workspace must be declared persistently in the niri config
-(`workspace "__scratchpad"`), otherwise `move-window-to-workspace
-"__scratchpad"` silently does nothing.
+No persistent named workspace is used: the stash is just whatever empty
+workspace niri keeps at the bottom of the focused output. This keeps the
+visible workspaces numbered 1, 2, 3 ... and `Mod+1..9` (focus-workspace by
+index) correct. The waybar module and workspace picker filter out the
+lone-scratchpad workspace so the stash stays hidden while the terminal is.
 """
 
 import json
@@ -21,7 +24,6 @@ import subprocess
 import sys
 import time
 
-STASH_WS = "__scratchpad"
 APP_ID = "rice-scratchpad"
 TITLE = "Scratchpad"
 
@@ -76,15 +78,29 @@ def clear_tracked_id():
 
 
 def current_workspace(workspaces):
-    """Return the (idx, id) of the focused workspace."""
+    """Return the (idx, id, output) of the focused workspace."""
     for ws in workspaces:
         if ws.get("is_focused"):
-            return ws.get("idx"), ws.get("id")
+            return ws.get("idx"), ws.get("id"), ws.get("output")
     # Fall back to the active workspace if none reports focus.
     for ws in workspaces:
         if ws.get("is_active"):
-            return ws.get("idx"), ws.get("id")
-    return None, None
+            return ws.get("idx"), ws.get("id"), ws.get("output")
+    return None, None, None
+
+
+def bottom_workspace_idx(workspaces, output):
+    """Index of the bottom (always-empty) workspace on the given output.
+
+    niri keeps exactly one empty workspace at the end of every output, so the
+    highest-index workspace there is a safe, empty landing spot for the stash.
+    """
+    candidates = [ws for ws in workspaces if ws.get("output") == output]
+    if not candidates:
+        candidates = workspaces
+    if not candidates:
+        return None
+    return max(candidates, key=lambda ws: ws.get("idx", 0)).get("idx")
 
 
 def find_scratchpad(windows, tracked_id):
@@ -115,12 +131,14 @@ def show(window, current_idx):
     niri_action("focus-window", "--id", wid)
 
 
-def hide(window):
-    """Stash the scratchpad on the hidden workspace; keep focus where it is."""
+def hide(window, stash_idx):
+    """Stash the scratchpad on the bottom workspace; keep focus where it is."""
+    if stash_idx is None:
+        return
     wid = str(window["id"])
     niri_action(
         "move-window-to-workspace",
-        STASH_WS,
+        str(stash_idx),
         "--window-id",
         wid,
         "--focus",
@@ -172,14 +190,14 @@ def main():
         print("niri is not reachable", file=sys.stderr)
         return 1
 
-    current_idx, current_id = current_workspace(workspaces)
+    current_idx, current_id, current_output = current_workspace(workspaces)
     window = find_scratchpad(windows, read_tracked_id())
 
     if window is not None:
         write_tracked_id(window["id"])
         on_current = current_id is not None and window.get("workspace_id") == current_id
         if on_current:
-            hide(window)
+            hide(window, bottom_workspace_idx(workspaces, current_output))
         else:
             show(window, current_idx)
         return 0

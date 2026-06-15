@@ -2,23 +2,55 @@
 # SPDX-License-Identifier: MIT
 set -euo pipefail
 
-niri msg -j workspaces 2>/dev/null | python3 -c '
+python3 <<'PY'
 import html
 import json
-import sys
+import subprocess
 
-try:
-    workspaces = json.load(sys.stdin)
-except Exception:
+APP_ID = "rice-scratchpad"
+
+
+def niri_json(*args):
+    try:
+        out = subprocess.run(
+            ["niri", "msg", "-j", *args],
+            capture_output=True, text=True, check=True,
+        ).stdout
+        return json.loads(out)
+    except Exception:
+        return None
+
+
+workspaces = niri_json("workspaces")
+if workspaces is None:
     print(json.dumps({"text": ""}))
     raise SystemExit
 
+# Identify the hidden scratchpad stash: a non-focused workspace whose only
+# windows are the scratchpad terminal. It is filtered out so the on-demand
+# stash never shows up in the bar while the scratchpad is hidden.
+windows = niri_json("windows") or []
+apps_by_ws = {}
+for win in windows:
+    apps_by_ws.setdefault(win.get("workspace_id"), []).append(win.get("app_id"))
+
+stash_ws_ids = {
+    ws_id
+    for ws_id, apps in apps_by_ws.items()
+    if apps and all(app == APP_ID for app in apps)
+}
+
 items = []
 tooltip_items = []
-for workspace in sorted(workspaces, key=lambda item: item.get("idx", 0)):
-    name = workspace.get("name") or str(workspace.get("idx", ""))
-    if name == "__scratchpad":
+# Order: unnamed (numbered) workspaces first by index, then named ones.
+def sort_key(item):
+    return (1 if item.get("name") else 0, item.get("idx", 0))
+
+
+for workspace in sorted(workspaces, key=sort_key):
+    if workspace.get("id") in stash_ws_ids and not workspace.get("is_focused"):
         continue
+    name = workspace.get("name") or str(workspace.get("idx", ""))
     label = html.escape(name)
     tooltip_items.append(("*" if workspace.get("is_focused") else " ") + f" {name}")
 
@@ -36,4 +68,4 @@ print(json.dumps({
     "tooltip": "\n".join(tooltip_items),
     "class": "focused"
 }))
-'
+PY

@@ -92,14 +92,6 @@ overview {
     backdrop-color "#2e3440"
 }
 
-// Persistent named workspace used as the hidden stash for the
-// Mod+Grave scratchpad terminal (see niri-rice/bin/rice-scratchpad-terminal).
-// Moving the scratchpad window here "hides" it; it is brought back to the
-// current workspace on the next toggle. Must be persistent so that the
-// `move-window-to-workspace "__scratchpad"` reference always resolves.
-// The "__" prefix marks it as hidden from waybar and the workspace picker.
-workspace "__scratchpad"
-
 // Settings that influence how windows are positioned and sized.
 // Find more information on the wiki:
 // https://niri-wm.github.io/niri/Configuration:-Layout
