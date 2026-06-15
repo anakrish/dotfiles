@@ -47,10 +47,20 @@ def sort_key(item):
     return (1 if item.get("name") else 0, item.get("idx", 0))
 
 
-for workspace in sorted(workspaces, key=sort_key):
-    if workspace.get("id") in stash_ws_ids and not workspace.get("is_focused"):
-        continue
-    name = workspace.get("name") or str(workspace.get("idx", ""))
+ordered = [
+    ws for ws in sorted(workspaces, key=sort_key)
+    if not (ws.get("id") in stash_ws_ids and not ws.get("is_focused"))
+]
+
+# Number the unnamed workspaces sequentially (1, 2, 3, ...) so the displayed
+# label matches Mod+N, which targets the Nth numbered workspace.
+position = 0
+for workspace in ordered:
+    if workspace.get("name"):
+        name = workspace.get("name")
+    else:
+        position += 1
+        name = str(position)
     label = html.escape(name)
     tooltip_items.append(("*" if workspace.get("is_focused") else " ") + f" {name}")
 

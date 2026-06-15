@@ -432,24 +432,27 @@ binds {
     //
     // For example, with 2 workspaces + 1 empty, indices 3, 4, 5 and so on
     // will all refer to the 3rd workspace.
-    Mod+1 { focus-workspace 1; }
-    Mod+2 { focus-workspace 2; }
-    Mod+3 { focus-workspace 3; }
-    Mod+4 { focus-workspace 4; }
-    Mod+5 { focus-workspace 5; }
-    Mod+6 { focus-workspace 6; }
-    Mod+7 { focus-workspace 7; }
-    Mod+8 { focus-workspace 8; }
-    Mod+9 { focus-workspace 9; }
-    Mod+Ctrl+1 { move-column-to-workspace 1; }
-    Mod+Ctrl+2 { move-column-to-workspace 2; }
-    Mod+Ctrl+3 { move-column-to-workspace 3; }
-    Mod+Ctrl+4 { move-column-to-workspace 4; }
-    Mod+Ctrl+5 { move-column-to-workspace 5; }
-    Mod+Ctrl+6 { move-column-to-workspace 6; }
-    Mod+Ctrl+7 { move-column-to-workspace 7; }
-    Mod+Ctrl+8 { move-column-to-workspace 8; }
-    Mod+Ctrl+9 { move-column-to-workspace 9; }
+    // Mod+N focuses the Nth *numbered* (unnamed) workspace, skipping named
+    // workspaces (chat, web, ...) and the hidden scratchpad stash, so the keys
+    // match the numbered workspaces shown in waybar.
+    Mod+1 { spawn-sh "$HOME/.local/bin/niri-numbered-workspace focus 1"; }
+    Mod+2 { spawn-sh "$HOME/.local/bin/niri-numbered-workspace focus 2"; }
+    Mod+3 { spawn-sh "$HOME/.local/bin/niri-numbered-workspace focus 3"; }
+    Mod+4 { spawn-sh "$HOME/.local/bin/niri-numbered-workspace focus 4"; }
+    Mod+5 { spawn-sh "$HOME/.local/bin/niri-numbered-workspace focus 5"; }
+    Mod+6 { spawn-sh "$HOME/.local/bin/niri-numbered-workspace focus 6"; }
+    Mod+7 { spawn-sh "$HOME/.local/bin/niri-numbered-workspace focus 7"; }
+    Mod+8 { spawn-sh "$HOME/.local/bin/niri-numbered-workspace focus 8"; }
+    Mod+9 { spawn-sh "$HOME/.local/bin/niri-numbered-workspace focus 9"; }
+    Mod+Ctrl+1 { spawn-sh "$HOME/.local/bin/niri-numbered-workspace move-column 1"; }
+    Mod+Ctrl+2 { spawn-sh "$HOME/.local/bin/niri-numbered-workspace move-column 2"; }
+    Mod+Ctrl+3 { spawn-sh "$HOME/.local/bin/niri-numbered-workspace move-column 3"; }
+    Mod+Ctrl+4 { spawn-sh "$HOME/.local/bin/niri-numbered-workspace move-column 4"; }
+    Mod+Ctrl+5 { spawn-sh "$HOME/.local/bin/niri-numbered-workspace move-column 5"; }
+    Mod+Ctrl+6 { spawn-sh "$HOME/.local/bin/niri-numbered-workspace move-column 6"; }
+    Mod+Ctrl+7 { spawn-sh "$HOME/.local/bin/niri-numbered-workspace move-column 7"; }
+    Mod+Ctrl+8 { spawn-sh "$HOME/.local/bin/niri-numbered-workspace move-column 8"; }
+    Mod+Ctrl+9 { spawn-sh "$HOME/.local/bin/niri-numbered-workspace move-column 9"; }
 
     // Alternatively, there are commands to move just a single window:
     // Mod+Ctrl+1 { move-window-to-workspace 1; }
