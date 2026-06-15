@@ -21,6 +21,18 @@ cd dotfiles
 ./niri-rice/install.sh --install-packages
 ```
 
+If your distro does not provide a recent niri package, build and install niri from source first:
+
+```bash
+./niri-rice/install.sh --build-niri --install-packages
+```
+
+`--build-niri` installs niri build dependencies, installs/updates stable Rust with rustup when needed, clones niri into `~/.cache/niri-rice/niri`, builds `cargo build --release`, and installs niri resources under `/usr/local`. To build a specific branch, tag, or commit:
+
+```bash
+./niri-rice/install.sh --build-niri --niri-ref v25.11
+```
+
 The installer backs up replaced files under:
 
 ```text
@@ -56,3 +68,16 @@ niri waybar fuzzel mako alacritty ghostty foot tmux fish emacs brightnessctl pla
 ```
 
 Some distributions may package `mako` as `mako-notifier`, and some may not ship `niri` in the default repositories.
+
+## Building niri from source
+
+The `--build-niri` path follows niri's upstream manual install layout:
+
+| Source file | Installed path |
+|---|---|
+| `target/release/niri` | `/usr/local/bin/niri` |
+| `resources/niri-session` | `/usr/local/bin/niri-session` |
+| `resources/niri.desktop` | `/usr/local/share/wayland-sessions/niri.desktop` |
+| `resources/niri-portals.conf` | `/usr/local/share/xdg-desktop-portal/niri-portals.conf` |
+| `resources/niri.service` | `/etc/systemd/user/niri.service` |
+| `resources/niri-shutdown.target` | `/etc/systemd/user/niri-shutdown.target` |

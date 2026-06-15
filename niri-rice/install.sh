@@ -6,13 +6,18 @@ profile_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "$profile_dir/.." && pwd)"
 backup_dir="$HOME/.dotfiles-backup/niri-rice-$(date +%Y%m%d-%H%M%S)"
 install_packages=0
+build_niri=0
+niri_ref="main"
+niri_source_dir="${XDG_CACHE_HOME:-$HOME/.cache}/niri-rice/niri"
 
 usage() {
     cat <<'EOF'
-Usage: ./niri-rice/install.sh [--install-packages]
+Usage: ./niri-rice/install.sh [--install-packages] [--build-niri] [--niri-ref REF]
 
 Options:
   --install-packages  Install recommended packages with apt, dnf, or pacman before applying config.
+  --build-niri        Install niri build dependencies, build niri from source, and install it under /usr/local.
+  --niri-ref REF      Git branch, tag, or commit to build for --build-niri. Defaults to main.
   -h, --help          Show this help.
 EOF
 }
@@ -21,6 +26,17 @@ while [ "$#" -gt 0 ]; do
     case "$1" in
         --install-packages)
             install_packages=1
+            ;;
+        --build-niri)
+            build_niri=1
+            ;;
+        --niri-ref)
+            if [ "$#" -lt 2 ]; then
+                echo "--niri-ref requires a branch, tag, or commit." >&2
+                exit 1
+            fi
+            niri_ref="$2"
+            shift
             ;;
         -h|--help)
             usage
@@ -124,6 +140,112 @@ configure_gtk_defaults() {
     gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark' >/dev/null 2>&1 || true
 }
 
+install_niri_build_dependencies() {
+    if command -v apt-get >/dev/null 2>&1; then
+        sudo apt-get update
+        sudo apt-get install -y \
+            git curl pkg-config build-essential gcc clang \
+            libudev-dev libgbm-dev libxkbcommon-dev libegl1-mesa-dev \
+            libwayland-dev libinput-dev libdbus-1-dev libsystemd-dev \
+            libseat-dev libpipewire-0.3-dev libpango1.0-dev libdisplay-info-dev
+        return
+    fi
+
+    if command -v dnf >/dev/null 2>&1; then
+        sudo dnf install -y \
+            git curl pkg-config gcc clang \
+            libudev-devel libgbm-devel libxkbcommon-devel wayland-devel \
+            libinput-devel dbus-devel systemd-devel libseat-devel pipewire-devel \
+            pango-devel cairo-gobject-devel libdisplay-info-devel
+        return
+    fi
+
+    if command -v pacman >/dev/null 2>&1; then
+        sudo pacman -Syu --needed \
+            git curl pkgconf base-devel gcc clang \
+            systemd mesa libxkbcommon wayland libinput dbus libseat pipewire \
+            pango cairo libdisplay-info
+        return
+    fi
+
+    echo "No supported package manager found. Install niri build dependencies manually." >&2
+    exit 1
+}
+
+ensure_rust_toolchain() {
+    if [ -f "$HOME/.cargo/env" ]; then
+        # shellcheck disable=SC1091
+        . "$HOME/.cargo/env"
+    fi
+
+    if ! command -v cargo >/dev/null 2>&1; then
+        if ! command -v curl >/dev/null 2>&1; then
+            echo "curl is required to install rustup." >&2
+            exit 1
+        fi
+
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+        # shellcheck disable=SC1091
+        . "$HOME/.cargo/env"
+    fi
+
+    if command -v rustup >/dev/null 2>&1; then
+        rustup toolchain install stable
+        rustup default stable
+    fi
+
+    if ! command -v cargo >/dev/null 2>&1; then
+        echo "cargo was not found after installing Rust." >&2
+        exit 1
+    fi
+}
+
+checkout_niri_source() {
+    mkdir -p "$(dirname "$niri_source_dir")"
+
+    if [ -e "$niri_source_dir" ] && [ ! -d "$niri_source_dir/.git" ]; then
+        echo "Refusing to overwrite non-git path: $niri_source_dir" >&2
+        exit 1
+    fi
+
+    if [ ! -d "$niri_source_dir/.git" ]; then
+        git clone https://github.com/niri-wm/niri.git "$niri_source_dir"
+    fi
+
+    git -C "$niri_source_dir" fetch --tags origin
+    git -C "$niri_source_dir" checkout "$niri_ref"
+    if [ "$(git -C "$niri_source_dir" symbolic-ref --short -q HEAD || true)" = "$niri_ref" ]; then
+        git -C "$niri_source_dir" pull --ff-only origin "$niri_ref"
+    fi
+}
+
+install_built_niri() {
+    sudo install -Dm755 "$niri_source_dir/target/release/niri" /usr/local/bin/niri
+    sudo install -Dm755 "$niri_source_dir/resources/niri-session" /usr/local/bin/niri-session
+    sudo install -Dm644 "$niri_source_dir/resources/niri.desktop" /usr/local/share/wayland-sessions/niri.desktop
+    sudo install -Dm644 "$niri_source_dir/resources/niri-portals.conf" /usr/local/share/xdg-desktop-portal/niri-portals.conf
+
+    if [ -f "$niri_source_dir/resources/niri.service" ]; then
+        sudo install -Dm644 "$niri_source_dir/resources/niri.service" /etc/systemd/user/niri.service
+    fi
+    if [ -f "$niri_source_dir/resources/niri-shutdown.target" ]; then
+        sudo install -Dm644 "$niri_source_dir/resources/niri-shutdown.target" /etc/systemd/user/niri-shutdown.target
+    fi
+
+    if command -v systemctl >/dev/null 2>&1; then
+        systemctl --user daemon-reload >/dev/null 2>&1 || true
+    fi
+}
+
+build_and_install_niri() {
+    install_niri_build_dependencies
+    ensure_rust_toolchain
+    checkout_niri_source
+    cargo build --release --manifest-path "$niri_source_dir/Cargo.toml"
+    install_built_niri
+    /usr/local/bin/niri --version
+}
+
 install_recommended_packages() {
     if command -v apt-get >/dev/null 2>&1; then
         local requested=(
@@ -192,6 +314,10 @@ install_recommended_packages() {
 
 if [ "$install_packages" -eq 1 ]; then
     install_recommended_packages
+fi
+
+if [ "$build_niri" -eq 1 ]; then
+    build_and_install_niri
 fi
 
 install_path "$profile_dir/config/alacritty" "$HOME/.config/alacritty"
