@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+set -euo pipefail
+
+target="${1:-}"
+if [ -z "$target" ]; then
+    echo "Usage: niri-quick-workspace <workspace-name>" >&2
+    exit 1
+fi
+
+selection="$(
+    niri msg -j workspaces 2>/dev/null | TARGET_WORKSPACE="$target" python3 -c '
+import json
+import os
+import sys
+
+target = os.environ["TARGET_WORKSPACE"]
+workspaces = json.load(sys.stdin)
+
+for workspace in workspaces:
+    if workspace.get("name") == target:
+        print(f"existing\t{target}")
+        raise SystemExit
+
+focused_output = next((workspace.get("output") for workspace in workspaces if workspace.get("is_focused")), None)
+same_output = [workspace for workspace in workspaces if workspace.get("output") == focused_output]
+empty = [
+    workspace for workspace in same_output
+    if not workspace.get("name") and workspace.get("active_window_id") is None
+]
+if not empty:
+    empty = [
+        workspace for workspace in workspaces
+        if not workspace.get("name") and workspace.get("active_window_id") is None
+    ]
+
+if not empty:
+    raise SystemExit("No empty workspace found")
+
+workspace = sorted(empty, key=lambda item: item.get("idx", 0))[-1]
+workspace_idx = workspace.get("idx")
+print(f"new\t{workspace_idx}")
+'
+)"
+
+mode="${selection%%	*}"
+workspace="${selection#*	}"
+
+case "$mode" in
+    existing)
+        niri msg action focus-workspace "$workspace"
+        ;;
+    new)
+        niri msg action set-workspace-name --workspace "$workspace" "$target"
+        niri msg action focus-workspace "$target"
+        ;;
+    *)
+        echo "Unexpected workspace selection: $selection" >&2
+        exit 1
+        ;;
+esac

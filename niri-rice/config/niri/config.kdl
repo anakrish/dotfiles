@@ -92,10 +92,6 @@ overview {
     backdrop-color "#2e3440"
 }
 
-// Named workspaces for quick jump shortcuts
-workspace "web"
-workspace "chat"
-
 // Settings that influence how windows are positioned and sized.
 // Find more information on the wiki:
 // https://niri-wm.github.io/niri/Configuration:-Layout
@@ -501,8 +497,8 @@ binds {
     Mod+Ctrl+C { center-visible-columns; }
 
     // Quick jumps to named workspaces.
-    Mod+Minus { focus-workspace "web"; }
-    Mod+Equal { focus-workspace "chat"; }
+    Mod+Minus { spawn-sh "$HOME/.local/bin/niri-quick-workspace web"; }
+    Mod+Equal { spawn-sh "$HOME/.local/bin/niri-quick-workspace chat"; }
 
     // Finer width adjustments.
     // This command can also:

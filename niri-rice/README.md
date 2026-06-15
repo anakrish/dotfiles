@@ -52,6 +52,8 @@ If you already installed the dependencies, run without package installation:
 | `Mod+T` | Open Alacritty |
 | `Mod+Shift+T` | Switch desktop/terminal theme |
 | `Mod+D` | Open fuzzel app launcher |
+| `Mod+-` | Jump to/create web workspace |
+| `Mod+=` | Jump to/create chat workspace |
 | `Mod+Shift+D` | Jump to workspace |
 | `Mod+Ctrl+D` | Move focused window to workspace |
 | `Mod+Shift+N` | Rename current workspace |
