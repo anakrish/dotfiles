@@ -1,140 +1,193 @@
-#!/usr/bin/env bash
+#!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
-set -euo pipefail
+"""Toggle a floating "scratchpad" terminal in niri.
 
-state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/niri-rice"
-window_id_file="$state_dir/scratchpad-window-id"
-mkdir -p "$state_dir"
+Behaviour (a real show/hide toggle, no workspace jumping):
+  * If the scratchpad window is on the *current* workspace -> hide it by
+    moving it to the persistent "scratchpad" stash workspace (focus stays put).
+  * If it exists elsewhere (the stash or another workspace) -> show it by
+    moving it to the current workspace, floating it, and focusing it.
+  * If it does not exist yet -> spawn it (Alacritty + a persistent tmux
+    session) on the current workspace.
 
-read -r current_workspace current_workspace_id <<< "$(
-    niri msg -j workspaces 2>/dev/null | python3 -c '
-import json
-import sys
+The stash workspace must be declared persistently in the niri config
+(`workspace "scratchpad"`), otherwise `move-window-to-workspace "scratchpad"`
+silently does nothing.
+"""
 
-try:
-    workspaces = json.load(sys.stdin)
-except Exception:
-    raise SystemExit
-
-for workspace in workspaces:
-    if workspace.get("is_focused"):
-        print(workspace.get("name") or workspace.get("idx"), workspace.get("id"))
-        break
-'
-)"
-
-find_window() {
-    niri msg -j windows 2>/dev/null | python3 -c '
 import json
 import os
+import subprocess
 import sys
+import time
 
-try:
-    windows = json.load(sys.stdin)
-except Exception:
-    raise SystemExit
+STASH_WS = "scratchpad"
+APP_ID = "rice-scratchpad"
+TITLE = "Scratchpad"
 
-tracked = os.environ.get("RICE_SCRATCHPAD_WINDOW_ID")
-for window in windows:
-    if tracked and str(window.get("id")) == tracked:
-        print(window.get("id"), "focused" if window.get("is_focused") else "unfocused")
-        raise SystemExit
+STATE_DIR = os.path.join(
+    os.environ.get("XDG_STATE_HOME", os.path.expanduser("~/.local/state")),
+    "niri-rice",
+)
+WINDOW_ID_FILE = os.path.join(STATE_DIR, "scratchpad-window-id")
 
-for window in windows:
-    if window.get("app_id") == "rice-scratchpad" or window.get("title") == "Scratchpad":
-        print(window.get("id"), "focused" if window.get("is_focused") else "unfocused")
-        raise SystemExit
 
-fallback = [window for window in windows if window.get("app_id") == "Alacritty" and window.get("title") == "~"]
-if len(fallback) == 1:
-    window = fallback[0]
-    print(window.get("id"), "focused" if window.get("is_focused") else "unfocused")
-'
-}
+def niri_json(*args):
+    try:
+        out = subprocess.run(
+            ["niri", "msg", "-j", *args],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout
+        return json.loads(out)
+    except (subprocess.CalledProcessError, json.JSONDecodeError, FileNotFoundError):
+        return None
 
-tracked_window_id=""
-if [ -f "$window_id_file" ]; then
-    tracked_window_id="$(cat "$window_id_file")"
-fi
 
-read -r window_id window_state <<< "$(
-    niri msg -j windows 2>/dev/null | RICE_SCRATCHPAD_WINDOW_ID="$tracked_window_id" CURRENT_WORKSPACE_ID="$current_workspace_id" python3 -c '
-import json
-import os
-import sys
+def niri_action(*args):
+    subprocess.run(
+        ["niri", "msg", "action", *args],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
 
-try:
-    windows = json.load(sys.stdin)
-except Exception:
-    raise SystemExit
 
-tracked = os.environ.get("RICE_SCRATCHPAD_WINDOW_ID")
-current_workspace_id = os.environ.get("CURRENT_WORKSPACE_ID")
+def read_tracked_id():
+    try:
+        with open(WINDOW_ID_FILE) as fh:
+            return fh.read().strip()
+    except OSError:
+        return ""
 
-def emit(window):
-    state = "current" if window.get("is_focused") or str(window.get("workspace_id")) == current_workspace_id else "elsewhere"
-    print(window.get("id"), state)
-    raise SystemExit
 
-for window in windows:
-    if tracked and str(window.get("id")) == tracked:
-        emit(window)
+def write_tracked_id(window_id):
+    os.makedirs(STATE_DIR, exist_ok=True)
+    with open(WINDOW_ID_FILE, "w") as fh:
+        fh.write(str(window_id) + "\n")
 
-for window in windows:
-    if window.get("app_id") == "rice-scratchpad" or window.get("title") == "Scratchpad":
-        emit(window)
 
-fallback = [window for window in windows if window.get("app_id") == "Alacritty" and window.get("title") == "~"]
-if len(fallback) == 1:
-    emit(fallback[0])
-'
-)"
+def clear_tracked_id():
+    try:
+        os.remove(WINDOW_ID_FILE)
+    except OSError:
+        pass
 
-if [ -n "$window_id" ]; then
-    printf '%s\n' "$window_id" > "$window_id_file"
-    if [ "$window_state" = "current" ]; then
-        niri msg action focus-window --id "$window_id" >/dev/null 2>&1 || true
-        niri msg action close-window
-        rm -f "$window_id_file"
-        exit 0
-    fi
 
-    niri msg action move-window-to-floating >/dev/null 2>&1 || true
-    niri msg action focus-window --id "$window_id"
-    exit 0
-fi
+def current_workspace(workspaces):
+    """Return the (idx, id) of the focused workspace."""
+    for ws in workspaces:
+        if ws.get("is_focused"):
+            return ws.get("idx"), ws.get("id")
+    # Fall back to the active workspace if none reports focus.
+    for ws in workspaces:
+        if ws.get("is_active"):
+            return ws.get("idx"), ws.get("id")
+    return None, None
 
-alacritty \
-    --class rice-scratchpad \
-    --title "Scratchpad" \
-    --option window.dimensions.columns=110 \
-    --option window.dimensions.lines=30 \
-    --command tmux new-session -A -s scratchpad &
 
-alacritty_pid="$!"
-for _ in $(seq 1 20); do
-    window_id="$(
-        niri msg -j windows 2>/dev/null | ALACRITTY_PID="$alacritty_pid" python3 -c '
-import json
-import os
-import sys
+def find_scratchpad(windows, tracked_id):
+    """Locate the scratchpad window, preferring the tracked id."""
+    if tracked_id:
+        for win in windows:
+            if str(win.get("id")) == str(tracked_id):
+                return win
+    for win in windows:
+        if win.get("app_id") == APP_ID or win.get("title") == TITLE:
+            return win
+    return None
 
-try:
-    windows = json.load(sys.stdin)
-except Exception:
-    raise SystemExit
 
-pid = int(os.environ["ALACRITTY_PID"])
-for window in windows:
-    if window.get("pid") == pid or window.get("app_id") == "rice-scratchpad" or window.get("title") == "Scratchpad":
-        print(window.get("id"))
-        break
-'
-    )"
-    if [ -n "$window_id" ]; then
-        printf '%s\n' "$window_id" > "$window_id_file"
-        niri msg action move-window-to-floating >/dev/null 2>&1 || true
-        exit 0
-    fi
-    sleep 0.25
-done
+def show(window, current_idx):
+    """Bring the scratchpad to the current workspace, floating and focused."""
+    wid = str(window["id"])
+    if current_idx is not None:
+        niri_action(
+            "move-window-to-workspace",
+            str(current_idx),
+            "--window-id",
+            wid,
+            "--focus",
+            "false",
+        )
+    niri_action("move-window-to-floating", "--id", wid)
+    niri_action("focus-window", "--id", wid)
+
+
+def hide(window):
+    """Stash the scratchpad on the hidden workspace; keep focus where it is."""
+    wid = str(window["id"])
+    niri_action(
+        "move-window-to-workspace",
+        STASH_WS,
+        "--window-id",
+        wid,
+        "--focus",
+        "false",
+    )
+
+
+def spawn():
+    """Launch a new scratchpad terminal on the current workspace."""
+    proc = subprocess.Popen(
+        [
+            "alacritty",
+            "--class",
+            APP_ID,
+            "--title",
+            TITLE,
+            "--option",
+            "window.dimensions.columns=110",
+            "--option",
+            "window.dimensions.lines=30",
+            "--command",
+            "tmux",
+            "new-session",
+            "-A",
+            "-s",
+            "scratchpad",
+        ]
+    )
+    for _ in range(40):
+        windows = niri_json("windows") or []
+        for win in windows:
+            if (
+                win.get("pid") == proc.pid
+                or win.get("app_id") == APP_ID
+                or win.get("title") == TITLE
+            ):
+                write_tracked_id(win["id"])
+                # The open-floating window-rule already floats it; make sure.
+                niri_action("move-window-to-floating", "--id", str(win["id"]))
+                niri_action("focus-window", "--id", str(win["id"]))
+                return
+        time.sleep(0.1)
+
+
+def main():
+    workspaces = niri_json("workspaces")
+    windows = niri_json("windows")
+    if workspaces is None or windows is None:
+        print("niri is not reachable", file=sys.stderr)
+        return 1
+
+    current_idx, current_id = current_workspace(workspaces)
+    window = find_scratchpad(windows, read_tracked_id())
+
+    if window is not None:
+        write_tracked_id(window["id"])
+        on_current = current_id is not None and window.get("workspace_id") == current_id
+        if on_current:
+            hide(window)
+        else:
+            show(window, current_idx)
+        return 0
+
+    clear_tracked_id()
+    spawn()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

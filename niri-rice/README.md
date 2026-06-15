@@ -59,7 +59,7 @@ If you already installed the dependencies, run without package installation:
 | `Mod+Shift+D` | Jump to workspace |
 | `Mod+Ctrl+D` | Move focused window to workspace |
 | `Mod+Shift+N` | Rename current workspace |
-| `Mod+Grave` | Focus/create scratchpad terminal |
+| `Mod+Grave` | Toggle scratchpad terminal (show/hide) |
 | `Mod+Shift+S` | Screenshot picker |
 | `Mod+Shift+C` | Clipboard history picker |
 
