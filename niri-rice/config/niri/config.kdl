@@ -171,8 +171,19 @@ layout {
 spawn-sh-at-startup "test ! -x \"$HOME/.local/bin/niri-monitor-autoswitch\" || \"$HOME/.local/bin/niri-monitor-autoswitch\""
 spawn-sh-at-startup "$HOME/.local/bin/rice-clipboard-daemon"
 
+// Rootless X server so X11 apps (e.g. Git Credential Manager's GUI) work under
+// niri, which has no built-in XWayland. Pinned to display :0 to match the
+// DISPLAY set in the environment block below. Requires xwayland-satellite on
+// PATH (symlinked into ~/.local/bin).
+spawn-at-startup "xwayland-satellite" ":0"
+
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"
+
+// DISPLAY for X11 clients, matching the xwayland-satellite display pinned above.
+environment {
+    DISPLAY ":0"
+}
 
 hotkey-overlay {
     // Uncomment this line to disable the "Important Hotkeys" pop-up at startup.

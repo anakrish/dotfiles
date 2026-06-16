@@ -35,6 +35,22 @@ If your distro does not provide a recent niri package, build and install niri fr
 ./niri-rice/install.sh --build-niri --niri-ref v25.11
 ```
 
+### XWayland support (`--xwayland-satellite`)
+
+niri has no built-in XWayland, so X11-only apps (for example Git Credential Manager's
+GUI prompt) have no display under a bare niri session. Install
+[`xwayland-satellite`](https://github.com/Supreeeme/xwayland-satellite), a rootless
+XWayland server, with:
+
+```bash
+./niri-rice/install.sh --xwayland-satellite
+```
+
+This uses a distro package when one is available and otherwise builds it from source
+with cargo (installing stable Rust via rustup when needed) and symlinks the binary into
+`~/.local/bin`. The niri config spawns it at startup on display `:0` and exports a
+matching `DISPLAY`, so X11 clients work automatically.
+
 The installer backs up replaced files under:
 
 ```text

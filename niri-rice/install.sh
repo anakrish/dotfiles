@@ -7,18 +7,22 @@ repo_root="$(cd "$profile_dir/.." && pwd)"
 backup_dir="$HOME/.dotfiles-backup/niri-rice-$(date +%Y%m%d-%H%M%S)"
 install_packages=0
 build_niri=0
+install_xwayland_satellite=0
 niri_ref="main"
 niri_source_dir="${XDG_CACHE_HOME:-$HOME/.cache}/niri-rice/niri"
+xwayland_satellite_ref="v0.8.1"
 
 usage() {
     cat <<'EOF'
-Usage: ./niri-rice/install.sh [--install-packages] [--build-niri] [--niri-ref REF]
+Usage: ./niri-rice/install.sh [--install-packages] [--build-niri] [--niri-ref REF] [--xwayland-satellite]
 
 Options:
-  --install-packages  Install recommended packages with apt, dnf, or pacman before applying config.
-  --build-niri        Install niri build dependencies, build niri from source, and install it under /usr/local.
-  --niri-ref REF      Git branch, tag, or commit to build for --build-niri. Defaults to main.
-  -h, --help          Show this help.
+  --install-packages    Install recommended packages with apt, dnf, or pacman before applying config.
+  --build-niri          Install niri build dependencies, build niri from source, and install it under /usr/local.
+  --niri-ref REF        Git branch, tag, or commit to build for --build-niri. Defaults to main.
+  --xwayland-satellite  Install xwayland-satellite (rootless XWayland for X11 apps under niri). Uses a distro
+                        package when available, otherwise builds it from source with cargo.
+  -h, --help            Show this help.
 EOF
 }
 
@@ -29,6 +33,9 @@ while [ "$#" -gt 0 ]; do
             ;;
         --build-niri)
             build_niri=1
+            ;;
+        --xwayland-satellite)
+            install_xwayland_satellite=1
             ;;
         --niri-ref)
             if [ "$#" -lt 2 ]; then
@@ -246,6 +253,56 @@ build_and_install_niri() {
     /usr/local/bin/niri --version
 }
 
+install_xwayland_satellite_build_dependencies() {
+    # xwayland-satellite needs clang to build and the Xwayland binary at runtime.
+    if command -v apt-get >/dev/null 2>&1; then
+        sudo apt-get update
+        sudo apt-get install -y clang libclang-dev pkg-config xwayland
+        return
+    fi
+
+    if command -v dnf >/dev/null 2>&1; then
+        sudo dnf install -y clang clang-devel pkg-config xorg-x11-server-Xwayland
+        return
+    fi
+
+    if command -v pacman >/dev/null 2>&1; then
+        sudo pacman -Syu --needed clang pkgconf xorg-xwayland
+        return
+    fi
+
+    echo "No supported package manager found. Install xwayland-satellite build dependencies manually." >&2
+    exit 1
+}
+
+build_and_install_xwayland_satellite() {
+    # Prefer a distro package when one is available; otherwise build from source.
+    if command -v apt-get >/dev/null 2>&1 && apt-cache show xwayland-satellite >/dev/null 2>&1; then
+        sudo apt-get install -y xwayland-satellite
+    elif command -v dnf >/dev/null 2>&1 && dnf -q list xwayland-satellite >/dev/null 2>&1; then
+        sudo dnf install -y xwayland-satellite
+    elif command -v pacman >/dev/null 2>&1 && pacman -Si xwayland-satellite >/dev/null 2>&1; then
+        sudo pacman -Syu --needed xwayland-satellite
+    else
+        echo "Building xwayland-satellite $xwayland_satellite_ref from source..."
+        install_xwayland_satellite_build_dependencies
+        ensure_rust_toolchain
+        cargo install --git https://github.com/Supreeeme/xwayland-satellite.git \
+            --tag "$xwayland_satellite_ref" --locked xwayland-satellite
+
+        # niri's startup PATH includes ~/.local/bin but not ~/.cargo/bin, so
+        # expose the cargo-installed binary where niri can spawn it.
+        mkdir -p "$HOME/.local/bin"
+        ln -sf "$HOME/.cargo/bin/xwayland-satellite" "$HOME/.local/bin/xwayland-satellite"
+    fi
+
+    if command -v xwayland-satellite >/dev/null 2>&1; then
+        xwayland-satellite --version || true
+    elif [ -x "$HOME/.local/bin/xwayland-satellite" ]; then
+        "$HOME/.local/bin/xwayland-satellite" --version || true
+    fi
+}
+
 install_recommended_packages() {
     if command -v apt-get >/dev/null 2>&1; then
         local requested=(
@@ -269,6 +326,8 @@ install_recommended_packages() {
             papirus-icon-theme
             fonts-jetbrains-mono
             fonts-font-awesome
+            xwayland
+            xwayland-satellite
         )
         local available=()
         local missing=()
@@ -297,7 +356,8 @@ install_recommended_packages() {
         sudo dnf install -y \
             niri waybar fuzzel mako alacritty foot tmux fish emacs \
             brightnessctl playerctl pavucontrol grim slurp wl-clipboard jq python3 \
-            papirus-icon-theme jetbrains-mono-fonts fontawesome-fonts
+            papirus-icon-theme jetbrains-mono-fonts fontawesome-fonts \
+            xorg-x11-server-Xwayland xwayland-satellite
         return
     fi
 
@@ -305,7 +365,8 @@ install_recommended_packages() {
         sudo pacman -Syu --needed \
             niri waybar fuzzel mako alacritty foot tmux fish emacs \
             brightnessctl playerctl pavucontrol grim slurp wl-clipboard jq python \
-            papirus-icon-theme ttf-jetbrains-mono ttf-font-awesome
+            papirus-icon-theme ttf-jetbrains-mono ttf-font-awesome \
+            xorg-xwayland xwayland-satellite
         return
     fi
 
@@ -318,6 +379,10 @@ fi
 
 if [ "$build_niri" -eq 1 ]; then
     build_and_install_niri
+fi
+
+if [ "$install_xwayland_satellite" -eq 1 ]; then
+    build_and_install_xwayland_satellite
 fi
 
 install_path "$profile_dir/config/alacritty" "$HOME/.config/alacritty"
