@@ -99,8 +99,11 @@ layout {
     // Set gaps around windows in logical pixels.
     gaps 12
 
-    // Center column if it doesn't fit with the previous one on screen.
-    center-focused-column "on-overflow"
+    // Always tile columns left-to-right. "on-overflow" would center the
+    // focused column whenever it doesn't fit next to the previous one, which
+    // is resolution/scale dependent and makes single windows appear centered
+    // on smaller displays. "never" keeps tiling deterministic across machines.
+    center-focused-column "never"
 
     // You can customize the widths that "switch-preset-column-width" (Mod+R) toggles between.
     preset-column-widths {
