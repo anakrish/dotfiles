@@ -371,6 +371,7 @@ install_recommended_packages() {
             grim
             slurp
             wl-clipboard
+            swayidle
             jq
             curl
             unzip
@@ -408,7 +409,7 @@ install_recommended_packages() {
         sudo dnf install -y \
             niri waybar fuzzel mako alacritty foot tmux fish emacs \
             brightnessctl playerctl pavucontrol grim slurp wl-clipboard jq python3 \
-            curl unzip \
+            curl unzip swayidle \
             papirus-icon-theme jetbrains-mono-fonts fontawesome-fonts \
             xorg-x11-server-Xwayland xwayland-satellite
         return
@@ -418,7 +419,7 @@ install_recommended_packages() {
         sudo pacman -Syu --needed \
             niri waybar fuzzel mako alacritty foot tmux fish emacs \
             brightnessctl playerctl pavucontrol grim slurp wl-clipboard jq python \
-            curl unzip \
+            curl unzip swayidle \
             papirus-icon-theme ttf-jetbrains-mono ttf-font-awesome \
             xorg-xwayland xwayland-satellite
         return
