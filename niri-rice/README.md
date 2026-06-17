@@ -98,6 +98,16 @@ downloads them from the upstream [nerd-fonts](https://github.com/ryanoasis/nerd-
 release into `~/.local/share/fonts` (skipping any already present) and refreshes the font
 cache. This runs automatically on every install, no flag required.
 
+### Intel display workaround
+
+On Intel (i915) laptops, Panel Self Refresh often leaves the screen blank — with
+only the mouse cursor visible — after suspend/resume or DPMS off under Wayland
+compositors like niri. On these machines `install.sh` adds the `i915.enable_psr=0`
+kernel parameter to `/etc/default/grub` and regenerates the GRUB config (a reboot
+applies it). This is gated on Intel i915 hardware, so it is a no-op on AMD/NVIDIA
+systems, and it is skipped when the parameter is already present (so reruns need no
+`sudo`). If it triggers, you must reboot for the fix to take effect.
+
 ## Building niri from source
 
 The `--build-niri` path follows niri's upstream manual install layout:

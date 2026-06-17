@@ -147,6 +147,68 @@ configure_gtk_defaults() {
     gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark' >/dev/null 2>&1 || true
 }
 
+uses_intel_i915() {
+    # True only when an Intel GPU is bound to the i915 driver. Used to gate
+    # Intel-specific display workarounds so they no-op on AMD/NVIDIA machines.
+    local driver_link
+    for driver_link in /sys/class/drm/card*/device/driver; do
+        [ -L "$driver_link" ] || continue
+        if [ "$(basename "$(readlink -f "$driver_link")")" = "i915" ]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+configure_intel_display_quirks() {
+    # On Intel (i915) laptops, Panel Self Refresh frequently leaves the screen
+    # blank (with only the cursor visible) after suspend/resume or DPMS off
+    # under Wayland compositors like niri. Disabling PSR via a kernel parameter
+    # is the standard fix. This only runs on Intel i915 systems and is a no-op
+    # once the parameter is already configured (so it needs no sudo on reruns).
+    local param="i915.enable_psr=0"
+    local grub_file="/etc/default/grub"
+
+    uses_intel_i915 || return 0
+
+    if grep -qw "$param" /proc/cmdline 2>/dev/null; then
+        return 0
+    fi
+    if [ -f "$grub_file" ] && grep -q "$param" "$grub_file"; then
+        echo "Intel PSR workaround already present in $grub_file; reboot to apply." >&2
+        return 0
+    fi
+
+    if [ ! -f "$grub_file" ]; then
+        echo "Intel (i915) GPU detected but $grub_file not found (non-GRUB bootloader)." >&2
+        echo "Add kernel parameter '$param' to your bootloader and reboot to fix" >&2
+        echo "blank-screen-after-resume." >&2
+        return 0
+    fi
+
+    echo "Intel (i915) GPU detected: adding kernel parameter '$param' to fix"
+    echo "blank-screen-with-cursor after suspend/resume."
+    sudo cp -a "$grub_file" "$grub_file.niri-rice.bak"
+    sudo sed -i \
+        "s/^\\(GRUB_CMDLINE_LINUX_DEFAULT=\"[^\"]*\\)\"/\\1 $param\"/" \
+        "$grub_file"
+
+    if ! grep -q "$param" "$grub_file"; then
+        # No active GRUB_CMDLINE_LINUX_DEFAULT line existed to amend; add one.
+        echo "GRUB_CMDLINE_LINUX_DEFAULT=\"$param\"" | sudo tee -a "$grub_file" >/dev/null
+    fi
+
+    if command -v update-grub >/dev/null 2>&1; then
+        sudo update-grub
+    elif command -v grub-mkconfig >/dev/null 2>&1; then
+        sudo grub-mkconfig -o /boot/grub/grub.cfg
+    else
+        echo "Updated $grub_file but found no update-grub/grub-mkconfig;" >&2
+        echo "regenerate your GRUB config manually." >&2
+    fi
+    echo "Reboot to apply the Intel PSR workaround."
+}
+
 ensure_nerd_fonts() {
     # The terminal, waybar, and shell-prompt configs reference Nerd Font
     # patched families (JetBrainsMono Nerd Font Mono, Hack Nerd Font Mono).
@@ -465,6 +527,7 @@ ensure_nerd_fonts
 "$HOME/.local/bin/alacritty-theme-switch" nord >/dev/null
 configure_gtk_defaults
 configure_copilot_cli
+configure_intel_display_quirks
 
 if command -v niri >/dev/null 2>&1; then
     niri validate --config "$HOME/.config/niri/config.kdl"
