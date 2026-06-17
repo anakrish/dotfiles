@@ -147,6 +147,56 @@ configure_gtk_defaults() {
     gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark' >/dev/null 2>&1 || true
 }
 
+ensure_nerd_fonts() {
+    # The terminal, waybar, and shell-prompt configs reference Nerd Font
+    # patched families (JetBrainsMono Nerd Font Mono, Hack Nerd Font Mono).
+    # Distro packages rarely ship the Nerd-patched variants, so fetch them from
+    # the upstream nerd-fonts release into the user font directory.
+    local font_dir="$HOME/.local/share/fonts"
+    local nerd_version="v3.4.0"
+    local base_url="https://github.com/ryanoasis/nerd-fonts/releases/download/$nerd_version"
+    # family marker (used by fc-list to detect presence) -> release zip name.
+    local fonts=(
+        "JetBrainsMono Nerd Font Mono:JetBrainsMono.zip"
+        "Hack Nerd Font Mono:Hack.zip"
+    )
+
+    if ! command -v fc-list >/dev/null 2>&1; then
+        echo "fontconfig (fc-list) not found; skipping Nerd Font installation." >&2
+        return
+    fi
+    if ! command -v curl >/dev/null 2>&1 || ! command -v unzip >/dev/null 2>&1; then
+        echo "curl and unzip are required to install Nerd Fonts; skipping." >&2
+        return
+    fi
+
+    mkdir -p "$font_dir"
+    local entry family zip_name tmp_dir installed_any=0
+    for entry in "${fonts[@]}"; do
+        family="${entry%%:*}"
+        zip_name="${entry##*:}"
+
+        if fc-list | grep -qiF "$family"; then
+            continue
+        fi
+
+        echo "Installing $family from nerd-fonts $nerd_version..."
+        tmp_dir="$(mktemp -d)"
+        if curl --proto '=https' --tlsv1.2 -fsSL "$base_url/$zip_name" -o "$tmp_dir/$zip_name"; then
+            unzip -qo "$tmp_dir/$zip_name" '*.ttf' -d "$font_dir" || \
+                unzip -qo "$tmp_dir/$zip_name" -d "$font_dir"
+            installed_any=1
+        else
+            echo "Failed to download $zip_name; install $family manually." >&2
+        fi
+        rm -rf "$tmp_dir"
+    done
+
+    if [ "$installed_any" -eq 1 ] && command -v fc-cache >/dev/null 2>&1; then
+        fc-cache -f "$font_dir" >/dev/null 2>&1 || true
+    fi
+}
+
 install_niri_build_dependencies() {
     if command -v apt-get >/dev/null 2>&1; then
         sudo apt-get update
@@ -322,6 +372,8 @@ install_recommended_packages() {
             slurp
             wl-clipboard
             jq
+            curl
+            unzip
             python3
             papirus-icon-theme
             fonts-jetbrains-mono
@@ -356,6 +408,7 @@ install_recommended_packages() {
         sudo dnf install -y \
             niri waybar fuzzel mako alacritty foot tmux fish emacs \
             brightnessctl playerctl pavucontrol grim slurp wl-clipboard jq python3 \
+            curl unzip \
             papirus-icon-theme jetbrains-mono-fonts fontawesome-fonts \
             xorg-x11-server-Xwayland xwayland-satellite
         return
@@ -365,6 +418,7 @@ install_recommended_packages() {
         sudo pacman -Syu --needed \
             niri waybar fuzzel mako alacritty foot tmux fish emacs \
             brightnessctl playerctl pavucontrol grim slurp wl-clipboard jq python \
+            curl unzip \
             papirus-icon-theme ttf-jetbrains-mono ttf-font-awesome \
             xorg-xwayland xwayland-satellite
         return
@@ -404,6 +458,8 @@ for script in "$profile_dir"/bin/*; do
 done
 
 ensure_bash_prompt
+
+ensure_nerd_fonts
 
 "$HOME/.local/bin/alacritty-theme-switch" nord >/dev/null
 configure_gtk_defaults

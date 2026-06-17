@@ -89,6 +89,15 @@ niri waybar fuzzel mako alacritty ghostty foot tmux fish emacs brightnessctl pla
 
 Some distributions may package `mako` as `mako-notifier`, and some may not ship `niri` in the default repositories.
 
+### Fonts
+
+The terminal, waybar, and shell-prompt configs use Nerd Font patched families
+(`JetBrainsMono Nerd Font Mono` and `Hack Nerd Font Mono`) for powerline and icon
+glyphs. Since most distributions do not package the Nerd-patched variants, `install.sh`
+downloads them from the upstream [nerd-fonts](https://github.com/ryanoasis/nerd-fonts)
+release into `~/.local/share/fonts` (skipping any already present) and refreshes the font
+cache. This runs automatically on every install, no flag required.
+
 ## Building niri from source
 
 The `--build-niri` path follows niri's upstream manual install layout:
