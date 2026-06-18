@@ -238,7 +238,11 @@ ensure_nerd_fonts() {
         family="${entry%%:*}"
         zip_name="${entry##*:}"
 
-        if fc-list | grep -qiF "$family"; then
+        # Match only the font family field (not file paths) so the check is
+        # precise and the download is skipped whenever the family is already
+        # present, whether installed by this script, a distro package, or the
+        # user.
+        if fc-list : family | grep -qiF "$family"; then
             continue
         fi
 

@@ -9,6 +9,29 @@ if ! command -v waybar >/dev/null 2>&1; then
     exit 1
 fi
 
+# Single-instance guard. niri registers spawn-at-startup processes as systemd
+# scopes under user@.service, and a machine may additionally have a stray
+# autostart entry or waybar.service, so waybar can be launched more than once
+# at (or shortly after) login. The kill loop below only catches a waybar that
+# already exists when we start, so two launchers racing at login would both
+# see "nothing running" and each spawn a bar.
+#
+# To make that impossible, hold an advisory lock for the lifetime of waybar:
+# the lock fd is inherited across exec, so it stays held until waybar exits. A
+# second launcher that starts concurrently fails the non-blocking lock and
+# bails out instead of stacking another bar.
+lock_file="${XDG_RUNTIME_DIR:-/tmp}/niri-rice-waybar.lock"
+if command -v flock >/dev/null 2>&1; then
+    exec 9>"$lock_file"
+    if ! flock -n 9; then
+        # Another launcher already owns waybar startup; do nothing.
+        exit 0
+    fi
+fi
+
+# Replace any pre-existing waybar we do not own (e.g. left over from an
+# in-place compositor restart, or started by a raw "waybar" path that does not
+# hold the lock) before starting a fresh one.
 if command -v pgrep >/dev/null 2>&1; then
     while IFS= read -r pid; do
         [ -n "$pid" ] || continue
