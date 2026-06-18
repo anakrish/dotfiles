@@ -524,6 +524,17 @@ for script in "$profile_dir"/bin/*; do
     chmod +x "$HOME/.local/bin/$(basename "$script")"
 done
 
+# This rice launches waybar from niri (spawn-at-startup "niri-rice-waybar"),
+# so the distro-provided waybar.service would start a second, duplicate top
+# bar. Mask it at the user level with a /dev/null symlink, which systemd reads
+# on its own at the next login and works even where `systemctl --user` is not
+# reachable. (Undo with: rm ~/.config/systemd/user/waybar.service)
+if [ -e /usr/lib/systemd/user/waybar.service ] || [ -e /etc/systemd/user/waybar.service ]; then
+    mkdir -p "$HOME/.config/systemd/user"
+    ln -sfn /dev/null "$HOME/.config/systemd/user/waybar.service"
+    systemctl --user disable --now waybar.service >/dev/null 2>&1 || true
+fi
+
 ensure_bash_prompt
 
 ensure_nerd_fonts
