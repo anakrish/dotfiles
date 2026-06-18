@@ -171,6 +171,13 @@ layout {
 spawn-sh-at-startup "test ! -x \"$HOME/.local/bin/niri-monitor-autoswitch\" || \"$HOME/.local/bin/niri-monitor-autoswitch\""
 spawn-sh-at-startup "$HOME/.local/bin/rice-clipboard-daemon"
 
+// Top bar. Always launch via the niri-rice-waybar wrapper (never raw
+// "waybar"): niri registers spawn-at-startup processes as systemd scopes
+// under user@.service, so they survive an in-place compositor restart. The
+// wrapper kills any existing waybar before exec-ing a fresh one, which keeps
+// exactly one bar instead of stacking duplicates across niri restarts.
+spawn-at-startup "niri-rice-waybar"
+
 // Rootless X server so X11 apps (e.g. Git Credential Manager's GUI) work under
 // niri, which has no built-in XWayland. Pinned to display :0 to match the
 // DISPLAY set in the environment block below. Requires xwayland-satellite on

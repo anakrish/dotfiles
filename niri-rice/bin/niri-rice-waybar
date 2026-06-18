@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+config="${XDG_CONFIG_HOME:-$HOME/.config}/waybar/config"
+style="${XDG_CONFIG_HOME:-$HOME/.config}/waybar/style.css"
+
+if ! command -v waybar >/dev/null 2>&1; then
+    echo "waybar is not installed" >&2
+    exit 1
+fi
+
+if command -v pgrep >/dev/null 2>&1; then
+    while IFS= read -r pid; do
+        [ -n "$pid" ] || continue
+        [ "$pid" != "$$" ] || continue
+        kill "$pid" 2>/dev/null || true
+    done < <(pgrep -xu "$(id -u)" waybar || true)
+fi
+
+exec waybar -c "$config" -s "$style"
