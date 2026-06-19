@@ -368,5 +368,5 @@ set_ghostty_theme "$theme"
 echo "Alacritty theme: $theme"
 
 if command -v notify-send >/dev/null 2>&1; then
-    notify-send "Alacritty theme" "$theme"
+    notify-send "Alacritty theme" "$theme" >/dev/null 2>&1 || true
 fi
