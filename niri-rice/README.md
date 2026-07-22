@@ -63,6 +63,29 @@ If you already installed the dependencies, run without package installation:
 ./niri-rice/install.sh
 ```
 
+## Running nested (native vs. inside GNOME/KDE)
+
+The config works both as a standalone session (started from a TTY / display
+manager) and nested as a window inside another compositor — a handy way to try
+niri, including inside a VM. A `niri-session-kind` helper detects which mode is
+active, and startup services that only make sense standalone are skipped when
+nested:
+
+- the idle / screen-blanking daemon (`swayidle`) — the host session owns idle
+  and locking;
+- monitor auto-switching — it drives physical outputs that don't exist nested;
+- the bundled rootless XWayland server on `:0` — the host already provides
+  XWayland, so a second one would collide.
+
+Force the mode by exporting `NIRI_SESSION_KIND=native` or `nested` before
+launching niri.
+
+Keybindings all use `Mod`, which niri maps to **Super** natively and to **Alt**
+when nested. Note that nested (`Mod == Alt`) the `Mod+<key>` binds shadow the
+Meta bindings of terminal apps and Emacs (`M-x`, `M-f`, …). For heavy
+Emacs/terminal use, prefer running niri natively, or free Super in the host
+compositor and rebind to explicit `Super+…`.
+
 ## Main shortcuts
 
 | Shortcut | Action |

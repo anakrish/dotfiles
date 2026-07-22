@@ -168,7 +168,15 @@ layout {
 // which may be more convenient to use.
 // See the binds section below for more spawn examples.
 
-spawn-sh-at-startup "test ! -x \"$HOME/.local/bin/niri-monitor-autoswitch\" || \"$HOME/.local/bin/niri-monitor-autoswitch\""
+// Several daemons below only make sense for a standalone (native) niri
+// session. When niri is launched nested inside another compositor (e.g. a
+// GNOME/KDE Wayland session, a common way to try niri or run it in a VM), the
+// niri-session-kind helper reports "nested" and these are skipped so they do
+// not fight the host session. Binds use "Mod", which niri maps to Super
+// natively and to Alt when nested, so keybindings stay usable in both.
+
+// Monitor auto-switch drives physical outputs and is meaningless nested.
+spawn-sh-at-startup "test \"$($HOME/.local/bin/niri-session-kind)\" = native || exit 0; test -x \"$HOME/.local/bin/niri-monitor-autoswitch\" && exec \"$HOME/.local/bin/niri-monitor-autoswitch\""
 spawn-sh-at-startup "$HOME/.local/bin/rice-clipboard-daemon"
 
 // Top bar. Always launch via the niri-rice-waybar wrapper (never raw
@@ -181,14 +189,18 @@ spawn-at-startup "niri-rice-waybar"
 // Rootless X server so X11 apps (e.g. Git Credential Manager's GUI) work under
 // niri, which has no built-in XWayland. Pinned to display :0 to match the
 // DISPLAY set in the environment block below. Requires xwayland-satellite on
-// PATH (symlinked into ~/.local/bin).
-spawn-at-startup "xwayland-satellite" ":0"
+// PATH (symlinked into ~/.local/bin). Skipped when nested: the host compositor
+// already provides XWayland (typically also on :0), and a second server on the
+// same display would collide.
+spawn-sh-at-startup "test \"$($HOME/.local/bin/niri-session-kind)\" = native || exit 0; exec xwayland-satellite :0"
 
 // Turn off displays after 5 minutes (300s) of inactivity using DPMS only.
 // power-off-monitors blanks the screens via a DPMS signal but keeps the
 // monitors powered, so USB-C power delivery (charging over the display cable)
 // keeps working. The system is never suspended. Activity powers them back on.
-spawn-at-startup "swayidle" "-w" "timeout" "300" "niri msg action power-off-monitors" "resume" "niri msg action power-on-monitors"
+// Skipped when nested: the host session owns idle/locking, and blanking would
+// target niri's nested window rather than real outputs.
+spawn-sh-at-startup "test \"$($HOME/.local/bin/niri-session-kind)\" = native || exit 0; exec swayidle -w timeout 300 'niri msg action power-off-monitors' resume 'niri msg action power-on-monitors'"
 
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"
@@ -287,7 +299,15 @@ binds {
     // like wev.
     //
     // "Mod" is a special modifier equal to Super when running on a TTY, and to Alt
-    // when running as a winit window.
+    // when running as a winit window (nested inside another compositor). All binds
+    // below use "Mod" so they stay usable in both modes without edits.
+    //
+    // Caveat when nested: with Mod == Alt, "Mod+<key>" binds collide with the
+    // Meta bindings of terminal apps and Emacs (M-x, M-f, ...). niri only grabs
+    // the specific combos bound here, so those keys stop reaching the focused
+    // app. If you live in Emacs/the terminal while nested, prefer running niri
+    // natively (Mod == Super, no collision), or free Super in the host
+    // compositor and rebind the combos you care about to explicit Super+...
     //
     // Most actions that you can bind here can also be invoked programmatically with
     // `niri msg action do-something`.

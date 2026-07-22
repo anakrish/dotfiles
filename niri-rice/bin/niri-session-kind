@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+#
+# Reports whether niri is running natively (directly on a TTY/DRM seat) or
+# nested as a window inside another compositor (e.g. a GNOME or KDE Wayland
+# session, which is a common way to try niri, including inside a VM). Prints
+# "native" or "nested" on stdout.
+#
+# config.kdl uses this to gate startup services that only make sense for a
+# standalone session -- the idle/screen-blanking daemon, monitor
+# auto-switching, and the bundled rootless XWayland server -- so that launching
+# niri nested does not fight the host session (double idle handling, blanking
+# the host output, or colliding with the host's own XWayland on :0).
+#
+# Force the result by exporting NIRI_SESSION_KIND=native|nested.
+
+set -euo pipefail
+
+case "${NIRI_SESSION_KIND:-}" in
+    native | nested)
+        echo "$NIRI_SESSION_KIND"
+        exit 0
+        ;;
+esac
+
+# A host compositor process is present only when niri is nested inside another
+# session. On a standalone TTY session none of these are running.
+host_compositors=(
+    gnome-shell
+    kwin_wayland
+    kwin_x11
+    plasmashell
+    mutter
+    sway
+    Hyprland
+    hyprland
+    weston
+    river
+    wayfire
+    labwc
+)
+
+for compositor in "${host_compositors[@]}"; do
+    if pgrep -x "$compositor" >/dev/null 2>&1; then
+        echo nested
+        exit 0
+    fi
+done
+
+echo native
