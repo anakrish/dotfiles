@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+# Jump to (or create) a named workspace — mirrors niri-rice niri-quick-workspace.
+# Usage: sway-quick-workspace <name>
+set -euo pipefail
+
+target="${1:-}"
+if [ -z "$target" ]; then
+    echo "Usage: sway-quick-workspace <workspace-name>" >&2
+    exit 1
+fi
+
+# swaymsg "workspace <name>" creates the workspace if it doesn't exist and
+# focuses it if it already does — no scripting needed.
+swaymsg workspace '"'"${target}"'"'

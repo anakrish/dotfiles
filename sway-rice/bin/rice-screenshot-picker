@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+set -euo pipefail
+
+screenshots_dir="${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots"
+mkdir -p "$screenshots_dir"
+
+timestamp="$(date '+%Y-%m-%d %H-%M-%S')"
+selection="$(
+    printf '%s\n' \
+        "Area -> Clipboard" \
+        "Area -> Save" \
+        "Screen -> Clipboard" \
+        "Screen -> Save" \
+        "Window -> Clipboard" \
+        "Window -> Save" |
+        fuzzel --dmenu --prompt="Screenshot: "
+)"
+
+[ -n "$selection" ] || exit 0
+
+case "$selection" in
+    "Area -> Clipboard")
+        geometry="$(slurp)"
+        grim -g "$geometry" - | wl-copy --type image/png
+        notify-send "Screenshot" "Area copied to clipboard"
+        ;;
+    "Area -> Save")
+        geometry="$(slurp)"
+        file="$screenshots_dir/Screenshot from $timestamp.png"
+        grim -g "$geometry" "$file"
+        notify-send "Screenshot saved" "$file"
+        ;;
+    "Screen -> Clipboard")
+        grim - | wl-copy --type image/png
+        notify-send "Screenshot" "Screen copied to clipboard"
+        ;;
+    "Screen -> Save")
+        file="$screenshots_dir/Screenshot from $timestamp.png"
+        grim "$file"
+        notify-send "Screenshot saved" "$file"
+        ;;
+    "Window -> Clipboard")
+        # Use swaymsg to get focused window geometry and capture it.
+        geometry="$(
+            swaymsg -t get_tree 2>/dev/null | python3 -c '
+import json, sys
+tree = json.load(sys.stdin)
+
+def find_focused(node):
+    if node.get("focused"):
+        r = node.get("rect", {})
+        return f"{r[\"x\"]},{r[\"y\"]} {r[\"width\"]}x{r[\"height\"]}"
+    for child in node.get("nodes", []) + node.get("floating_nodes", []):
+        result = find_focused(child)
+        if result:
+            return result
+    return None
+
+result = find_focused(tree)
+if result:
+    print(result)
+'
+        )"
+        if [ -n "$geometry" ]; then
+            grim -g "$geometry" - | wl-copy --type image/png
+            notify-send "Screenshot" "Window copied to clipboard"
+        fi
+        ;;
+    "Window -> Save")
+        geometry="$(
+            swaymsg -t get_tree 2>/dev/null | python3 -c '
+import json, sys
+tree = json.load(sys.stdin)
+
+def find_focused(node):
+    if node.get("focused"):
+        r = node.get("rect", {})
+        return f"{r[\"x\"]},{r[\"y\"]} {r[\"width\"]}x{r[\"height\"]}"
+    for child in node.get("nodes", []) + node.get("floating_nodes", []):
+        result = find_focused(child)
+        if result:
+            return result
+    return None
+
+result = find_focused(tree)
+if result:
+    print(result)
+'
+        )"
+        if [ -n "$geometry" ]; then
+            file="$screenshots_dir/Screenshot from $timestamp.png"
+            grim -g "$geometry" "$file"
+            notify-send "Screenshot saved" "$file"
+        fi
+        ;;
+esac

@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+set -euo pipefail
+
+action="${1:-focus}"
+
+case "$action" in
+    focus|move) ;;
+    *)
+        echo "Usage: sway-workspace-picker [focus|move]" >&2
+        exit 1
+        ;;
+esac
+
+workspace_list="$(
+    swaymsg -t get_workspaces 2>/dev/null | python3 - <<'PY'
+import json, sys
+
+workspaces = json.load(sys.stdin)
+for ws in sorted(workspaces, key=lambda w: (0 if w.get("focused") else 1, w.get("num", 999), w.get("name", ""))):
+    name    = ws.get("name", "")
+    focused = ws.get("focused", False)
+    urgent  = ws.get("urgent", False)
+    visible = ws.get("visible", False)
+
+    if urgent:
+        state = "urgent"
+    elif focused:
+        state = "focused"
+    elif visible:
+        state = "visible"
+    else:
+        state = "inactive"
+
+    print(f"{name} [{state}]")
+PY
+)"
+
+selection="$(
+    {
+        printf '%s\n' "$workspace_list"
+        echo "new: name & create workspace"
+    } | fuzzel --dmenu --prompt="Workspace: "
+)"
+
+[ -n "$selection" ] || exit 0
+
+if [ "$selection" = "new: name & create workspace" ]; then
+    exec "$HOME/.local/bin/sway-rename-workspace"
+fi
+
+workspace="${selection% \[*\]}"
+[ -n "$workspace" ] || exit 0
+
+case "$action" in
+    focus)
+        swaymsg workspace '"'"$workspace"'"'
+        ;;
+    move)
+        swaymsg move container to workspace '"'"$workspace"'"'
+        ;;
+esac

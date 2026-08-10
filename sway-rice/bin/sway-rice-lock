@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+# Lock the screen with swaylock.
+# The background colour is kept in sync with the active theme by
+# alacritty-theme-switch; this script reads it from the sway config.
+set -euo pipefail
+
+sway_config="${XDG_CONFIG_HOME:-$HOME/.config}/sway/config"
+bg_color="2e3440"
+
+if [ -f "$sway_config" ]; then
+    extracted="$(grep -oP 'output \* bg #\K[0-9a-fA-F]{6}' "$sway_config" | head -1 || true)"
+    [ -n "$extracted" ] && bg_color="$extracted"
+fi
+
+exec swaylock -F -c "$bg_color"

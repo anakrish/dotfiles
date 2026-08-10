@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+set -euo pipefail
+
+current_name="$(
+    swaymsg -t get_workspaces 2>/dev/null | python3 -c '
+import json, sys
+for ws in json.load(sys.stdin):
+    if ws.get("focused"):
+        print(ws.get("name", ""))
+        break
+'
+)"
+
+choices="$(
+    {
+        [ -n "$current_name" ] && printf '%s\n' "$current_name"
+        printf '%s\n' \
+            "project" \
+            "debug" \
+            "review" \
+            "docs" \
+            "research" \
+            "meeting" \
+            "mail" \
+            "scratch" \
+            "unset workspace name"
+    } | awk 'NF && !seen[$0]++'
+)"
+
+selection="$(
+    printf '%s\n' "$choices" |
+        fuzzel --dmenu --prompt="Workspace name: "
+)"
+
+case "$selection" in
+    "")
+        exit 0
+        ;;
+    "unset workspace name")
+        # Switch to a numbered workspace (sway doesn't have a direct unset-name
+        # command; rename to a number that isn't used).
+        num="$(swaymsg -t get_workspaces 2>/dev/null | python3 -c '
+import json, sys
+workspaces = json.load(sys.stdin)
+focused = next((w for w in workspaces if w.get("focused")), None)
+if focused:
+    print(focused.get("num", 1))
+' || true)"
+        [ -n "$num" ] && swaymsg rename workspace to '"'"${num}"'"'
+        message="Workspace name unset"
+        ;;
+    *)
+        swaymsg rename workspace to '"'"${selection}"'"'
+        message="Workspace renamed: $selection"
+        ;;
+esac
+
+if command -v notify-send >/dev/null 2>&1; then
+    notify-send "sway workspace" "$message"
+fi
