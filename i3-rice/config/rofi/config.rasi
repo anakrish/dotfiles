@@ -1,0 +1,52 @@
+configuration {
+  modi: "drun,run,window";
+  font: "JetBrainsMono Nerd Font Mono 12";
+  show-icons: true;
+  icon-theme: "Papirus-Dark";
+  terminal: "alacritty";
+  drun-display-format: "{name}";
+  lines: 12;
+  width: 44;
+}
+
+* {
+  bg:           #2e3440f2;
+  fg:           #d8dee9ff;
+  accent:       #88c0d0ff;
+  selected-bg:  #3b4252f6;
+  selected-fg:  #d8dee9ff;
+  border-color: #b48eadff;
+  background-color: @bg;
+  text-color:   @fg;
+}
+
+window {
+  background-color: @bg;
+  border:        3px;
+  border-color:  @border-color;
+  border-radius: 16px;
+  padding:       14px 20px;
+  width:         44%;
+}
+
+mainbox     { background-color: transparent; }
+inputbar    { background-color: transparent; margin: 0 0 10px; }
+entry       { background-color: transparent; text-color: @fg; }
+prompt      { text-color: @accent; margin: 0 8px 0 0; }
+listview    { background-color: transparent; lines: 12; }
+
+element {
+  background-color: transparent;
+  padding:          4px 9px;
+  border-radius:    11px;
+}
+
+element selected {
+  background-color: @selected-bg;
+  text-color:       @selected-fg;
+}
+
+element-text {
+  background-color: transparent;
+  highlight:        bold @accent;
+}

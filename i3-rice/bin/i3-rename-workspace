@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+set -euo pipefail
+
+current_name="$(i3-msg -t get_workspaces | python3 -c '
+import json, sys
+for ws in json.load(sys.stdin):
+    if ws.get("focused"):
+        print(ws.get("name", ""))
+        break
+')"
+
+choices="$(
+    { [ -n "$current_name" ] && printf '%s\n' "$current_name"; \
+      printf '%s\n' project debug review docs research meeting mail scratch "unset workspace name"; } \
+    | awk 'NF && !seen[$0]++'
+)"
+
+selection="$(printf '%s\n' "$choices" \
+    | rofi -dmenu -p "Workspace name: " -theme ~/.config/rofi/config.rasi)"
+
+case "$selection" in
+    "") exit 0 ;;
+    "unset workspace name")
+        num="$(i3-msg -t get_workspaces | python3 -c '
+import json, sys
+for ws in json.load(sys.stdin):
+    if ws.get("focused"):
+        print(ws.get("num", 1))
+        break
+' || true)"
+        [ -n "$num" ] && i3-msg rename workspace to "\"$num\""
+        notify-send "i3 workspace" "Workspace name unset"
+        ;;
+    *)
+        i3-msg rename workspace to "\"$selection\""
+        notify-send "i3 workspace" "Workspace renamed: $selection"
+        ;;
+esac

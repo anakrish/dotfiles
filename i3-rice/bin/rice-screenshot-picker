@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+set -euo pipefail
+
+screenshots_dir="${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots"
+mkdir -p "$screenshots_dir"
+timestamp="$(date '+%Y-%m-%d %H-%M-%S')"
+
+selection="$(printf '%s\n' \
+    "Area -> Clipboard" \
+    "Area -> Save" \
+    "Screen -> Clipboard" \
+    "Screen -> Save" \
+    "Window -> Clipboard" \
+    "Window -> Save" \
+    | rofi -dmenu -p "Screenshot: " -theme ~/.config/rofi/config.rasi)"
+
+[ -n "$selection" ] || exit 0
+
+case "$selection" in
+    "Area -> Clipboard")
+        maim -s | xclip -selection clipboard -t image/png
+        notify-send "Screenshot" "Area copied to clipboard"
+        ;;
+    "Area -> Save")
+        file="$screenshots_dir/Screenshot from $timestamp.png"
+        maim -s "$file"
+        notify-send "Screenshot saved" "$file"
+        ;;
+    "Screen -> Clipboard")
+        maim | xclip -selection clipboard -t image/png
+        notify-send "Screenshot" "Screen copied"
+        ;;
+    "Screen -> Save")
+        file="$screenshots_dir/Screenshot from $timestamp.png"
+        maim "$file"
+        notify-send "Screenshot saved" "$file"
+        ;;
+    "Window -> Clipboard")
+        maim --window "$(xdotool getactivewindow)" | xclip -selection clipboard -t image/png
+        notify-send "Screenshot" "Window copied"
+        ;;
+    "Window -> Save")
+        file="$screenshots_dir/Screenshot from $timestamp.png"
+        maim --window "$(xdotool getactivewindow)" "$file"
+        notify-send "Screenshot saved" "$file"
+        ;;
+esac

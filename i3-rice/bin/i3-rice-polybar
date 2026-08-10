@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+set -euo pipefail
+
+lock_file="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/i3-rice-polybar.lock"
+exec 9>"$lock_file"
+flock -n 9 || exit 0
+
+killall -q polybar 2>/dev/null || true
+sleep 0.3
+exec polybar main -c ~/.config/polybar/config

@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+set -euo pipefail
+
+target="${1:-}"
+[ -z "$target" ] && { echo "Usage: i3-quick-workspace <name>" >&2; exit 1; }
+
+i3-msg workspace "\"$target\""

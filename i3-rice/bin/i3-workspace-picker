@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+set -euo pipefail
+
+action="${1:-focus}"
+
+workspace_list="$(i3-msg -t get_workspaces | python3 -c '
+import json, sys
+wss = json.load(sys.stdin)
+for ws in sorted(wss, key=lambda w: w.get("num", 999)):
+    name = ws.get("name", "")
+    focused = ws.get("focused", False)
+    urgent = ws.get("urgent", False)
+    visible = ws.get("visible", False)
+    state = "focused" if focused else "urgent" if urgent else "visible" if visible else "inactive"
+    print(f"{name} [{state}]")
+')"
+
+selection="$(printf '%s\nnew: rename current workspace\n' "$workspace_list" \
+    | rofi -dmenu -p "Workspace: " -theme ~/.config/rofi/config.rasi)"
+
+[ -n "$selection" ] || exit 0
+
+if [ "$selection" = "new: rename current workspace" ]; then
+    exec "$HOME/.local/bin/i3-rename-workspace"
+fi
+
+workspace="${selection% \[*\]}"
+
+case "$action" in
+    focus) i3-msg workspace "\"$workspace\"" ;;
+    move)  i3-msg move container to workspace "\"$workspace\"" ;;
+esac
