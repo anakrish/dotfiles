@@ -3,7 +3,7 @@ configuration {
   font: "JetBrainsMono Nerd Font Mono 12";
   show-icons: true;
   icon-theme: "Papirus-Dark";
-  terminal: "alacritty";
+  terminal: "gnome-terminal";
   drun-display-format: "{name}";
   lines: 12;
   width: 44;

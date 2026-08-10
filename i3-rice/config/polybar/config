@@ -110,7 +110,7 @@ interval = 5
 format-connected = <label-connected>
 format-disconnected = <label-disconnected>
 
-label-connected =  %{A1:alacritty -e nmtui &:}%ifname% %local_ip%%{A}
+label-connected =  %{A1:gnome-terminal -- nmtui &:}%ifname% %local_ip%%{A}
 label-connected-foreground = ${colors.green}
 label-connected-padding = 2
 

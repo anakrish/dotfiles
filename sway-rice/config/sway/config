@@ -6,7 +6,7 @@
 
 # ── Variables ─────────────────────────────────────────────────────────────────
 set $mod   Mod4
-set $term  alacritty
+set $term  gnome-terminal --disable-factory --hide-menubar
 set $menu  fuzzel
 set $lock  swaylock -F -c 2e3440
 
@@ -34,6 +34,7 @@ input type:pointer {
 # Default background colour (matches waybar/mako/fuzzel theme).
 # alacritty-theme-switch updates this line; keep the exact format.
 output * bg #2e3440 solid_color
+output Virtual-1 mode 2560x1600
 
 # ── Hyper-V / VM rendering note ───────────────────────────────────────────────
 # On Hyper-V the DRM device is not fully exposed to wlroots.
@@ -89,7 +90,7 @@ exec swayidle -w \
 
 # ── Floating window rules ─────────────────────────────────────────────────────
 # rice-scratchpad terminal — managed by rice-scratchpad-terminal script.
-for_window [app_id="rice-scratchpad"]     floating enable, resize set 900 600
+for_window [title="^Scratchpad$"]         floating enable, resize set 900 600
 
 # Firefox picture-in-picture player.
 for_window [app_id="firefox"  title="^Picture-in-Picture$"] floating enable, sticky enable
@@ -189,9 +190,8 @@ bindsym $mod+m            fullscreen toggle
 
 # Split orientation (sway-specific; no niri equivalent)
 bindsym $mod+backslash    split horizontal
-bindsym $mod+minus        split vertical
 # Note: $mod+minus is overloaded above for "web" workspace — the split binding
-# is superseded. Uncomment one or the other based on preference:
+# takes precedence. Replace that binding if vertical split is preferred:
 # bindsym $mod+minus  split vertical
 
 # Layout cycling (sway-specific)
@@ -229,9 +229,6 @@ bindsym --locked XF86AudioPrev         exec playerctl previous
 bindsym --locked XF86AudioNext         exec playerctl next
 bindsym --locked XF86MonBrightnessUp   exec brightnessctl --class=backlight set +10%
 bindsym --locked XF86MonBrightnessDown exec brightnessctl --class=backlight set 10%-
-
-# ── Screen lock ───────────────────────────────────────────────────────────────
-bindsym $mod+Shift+Ctrl+l exec $HOME/.local/bin/sway-rice-lock
 
 # ── Reload / exit ─────────────────────────────────────────────────────────────
 bindsym $mod+Shift+r      reload

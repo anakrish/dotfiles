@@ -112,7 +112,7 @@ check_optional_commands() {
     local missing=()
     local command_name
 
-    for command_name in i3 polybar rofi dunst picom alacritty tmux fish emacs \
+    for command_name in i3 polybar rofi dunst picom gnome-terminal tmux fish emacs \
             brightnessctl playerctl pavucontrol maim xdotool xclip i3lock hsetroot; do
         if ! command -v "$command_name" >/dev/null 2>&1; then
             missing+=("$command_name")
@@ -159,6 +159,18 @@ configure_gtk_defaults() {
     gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark' >/dev/null 2>&1 || true
 }
 
+configure_default_xsession() {
+    local xsession="$HOME/.xsession"
+    backup_path "$xsession"
+    cat > "$xsession" <<'EOF'
+#!/usr/bin/env bash
+export XDG_CURRENT_DESKTOP=i3
+export XDG_SESSION_TYPE=x11
+exec "$HOME/.local/bin/i3-rice-session"
+EOF
+    chmod +x "$xsession"
+}
+
 install_recommended_packages() {
     if command -v apt-get >/dev/null 2>&1; then
         local requested=(
@@ -168,7 +180,7 @@ install_recommended_packages() {
             rofi
             dunst
             picom
-            alacritty
+            gnome-terminal
             foot
             tmux
             fish
@@ -262,6 +274,7 @@ ensure_bash_prompt
 ensure_nerd_fonts
 configure_gtk_defaults
 configure_copilot_cli
+configure_default_xsession
 
 "$HOME/.local/bin/alacritty-theme-switch" nord >/dev/null || true
 
@@ -269,4 +282,5 @@ check_optional_commands
 
 echo "i3 rice installed."
 echo "Backups, if any, are in: $backup_dir"
-echo "Log out and select i3 at the login screen, or run: i3-msg restart"
+echo "Default xrdp session set to i3 via ~/.xsession."
+echo "Log out/reconnect, or run: i3-msg restart"

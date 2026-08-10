@@ -27,6 +27,7 @@ exec --no-startup-id $HOME/.local/bin/rice-clipboard-daemon
 exec --no-startup-id $HOME/.local/bin/i3-rice-polybar
 
 # Always re-apply after reload
+exec_always --no-startup-id xrandr --output Virtual-1 --mode 2560x1600
 exec_always --no-startup-id setxkbmap -option ctrl:nocaps
 exec_always --no-startup-id hsetroot -solid "#2e3440"
 
@@ -34,15 +35,16 @@ exec_always --no-startup-id hsetroot -solid "#2e3440"
 # exec_always --no-startup-id xautolock -time 10 -locker "$HOME/.local/bin/i3-rice-lock"
 
 # ── Terminal ──────────────────────────────────────────────────────────────────
-bindsym $mod+t exec alacritty
+bindsym $mod+t exec gnome-terminal --disable-factory --hide-menubar
 bindsym $mod+Shift+t exec $HOME/.local/bin/alacritty-theme-switch
 
 # ── Launchers ─────────────────────────────────────────────────────────────────
-bindsym $mod+d exec rofi -show drun -theme ~/.config/rofi/config.rasi
+bindsym $mod+d exec rofi -show drun -config ~/.config/rofi/config.rasi
 bindsym $mod+Shift+d exec $HOME/.local/bin/i3-workspace-picker focus
 bindsym $mod+ctrl+d exec $HOME/.local/bin/i3-workspace-picker move
 bindsym $mod+Shift+n exec $HOME/.local/bin/i3-rename-workspace
 bindsym $mod+grave exec $HOME/.local/bin/rice-scratchpad-terminal
+bindsym $mod+Shift+slash exec $HOME/.local/bin/i3-show-keys
 
 # ── Screenshots & clipboard ───────────────────────────────────────────────────
 bindsym $mod+Shift+s exec $HOME/.local/bin/rice-screenshot-picker
@@ -155,6 +157,6 @@ mode "resize" {
 bindsym $mod+r mode "resize"
 
 # ── Window rules ──────────────────────────────────────────────────────────────
-for_window [class="rice-scratchpad"] floating enable, resize set 900 600
+for_window [title="^Scratchpad$"] floating enable, resize set 900 600
 for_window [title="^Picture-in-Picture$"] floating enable, sticky enable
 for_window [class="org.pulseaudio.pavucontrol"] floating enable

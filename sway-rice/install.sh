@@ -185,7 +185,7 @@ install_recommended_packages() {
             waybar
             fuzzel
             mako-notifier
-            alacritty
+            gnome-terminal
             foot
             tmux
             fish
@@ -229,7 +229,7 @@ install_recommended_packages() {
 
     if command -v dnf >/dev/null 2>&1; then
         sudo dnf install -y \
-            sway waybar fuzzel mako alacritty foot tmux fish emacs \
+            sway waybar fuzzel mako gnome-terminal foot tmux fish emacs \
             brightnessctl playerctl pavucontrol grim slurp wl-clipboard \
             swayidle swaylock jq python3 curl unzip \
             papirus-icon-theme jetbrains-mono-fonts fontawesome-fonts \
@@ -239,7 +239,7 @@ install_recommended_packages() {
 
     if command -v pacman >/dev/null 2>&1; then
         sudo pacman -Syu --needed \
-            sway waybar fuzzel mako alacritty foot tmux fish emacs \
+            sway waybar fuzzel mako gnome-terminal foot tmux fish emacs \
             brightnessctl playerctl pavucontrol grim slurp wl-clipboard \
             swayidle swaylock jq python curl unzip \
             papirus-icon-theme ttf-jetbrains-mono ttf-font-awesome \
@@ -252,7 +252,7 @@ install_recommended_packages() {
 
 check_optional_commands() {
     local missing=()
-    for cmd in sway waybar fuzzel mako makoctl alacritty tmux fish emacs; do
+    for cmd in sway waybar fuzzel mako makoctl gnome-terminal tmux fish emacs; do
         if ! command -v "$cmd" >/dev/null 2>&1; then
             missing+=("$cmd")
         fi

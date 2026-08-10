@@ -5,7 +5,7 @@
 ## Requirements
 
 - Ubuntu 22.04+ in a Hyper-V VM accessed via Windows `mstsc` (RDP / xrdp Enhanced Session)
-- i3-gaps, polybar, rofi, dunst, picom, alacritty
+- i3-gaps, polybar, rofi, dunst, picom, gnome-terminal
 
 ## Install
 
@@ -23,8 +23,8 @@ After installing, **log out and select i3** at the xrdp login screen.
 
 | Key | Action |
 |-----|--------|
-| `Super+T` | New Alacritty terminal |
-| `Super+Shift+T` | Switch Alacritty/system theme |
+| `Super+T` | New GNOME Terminal |
+| `Super+Shift+T` | Switch desktop/terminal theme |
 | `Super+D` | App launcher (rofi) |
 | `Super+Shift+D` | Workspace picker — focus |
 | `Super+Ctrl+D` | Workspace picker — move window |
@@ -68,7 +68,7 @@ alacritty-theme-switch tokyo-night
 
 Or press `Super+Shift+T` to pick interactively with rofi.
 
-Switching a theme updates: Alacritty, i3 border colors, polybar colors, rofi, dunst, shell prompt, GTK, Ghostty.
+Switching a theme updates: GNOME Terminal palette, i3 border colors, polybar colors, rofi, dunst, shell prompt, GTK, and Ghostty.
 
 ---
 
@@ -104,7 +104,7 @@ i3-rice/
 │   ├── dunst/dunstrc          — Nord-themed dunst
 │   └── picom/picom.conf       — rounded corners + shadows
 └── bin/
-    ├── alacritty-theme-switch — theme switcher (11 Nord-family themes)
+    ├── alacritty-theme-switch — theme switcher (11 themes; updates GNOME Terminal too)
     ├── i3-rice-polybar        — flock-guarded polybar launcher
     ├── i3-rice-lock           — i3lock with theme-aware bg color
     ├── i3-workspace-picker    — rofi workspace switcher

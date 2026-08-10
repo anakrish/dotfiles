@@ -65,7 +65,7 @@ choose_theme() {
         "Ayu Mirage" \
         "Rose Pine Moon" \
         "Solarized Dark" |
-        fuzzel --dmenu --prompt="Alacritty theme: "
+        fuzzel --dmenu --prompt="Rice theme: "
 }
 
 theme_colors() {
@@ -197,7 +197,7 @@ vertical-pad=14
 inner-pad=10
 line-height=20
 letter-spacing=0
-terminal=alacritty
+terminal=gnome-terminal
 layer=overlay
 icon-theme=Papirus-Dark
 
@@ -299,6 +299,50 @@ set_gtk_theme() {
     fi
 }
 
+set_gnome_terminal_theme() {
+    local theme="$1"
+    local background surface surface_alt text muted accent accent_alt warning error green yellow blue magenta cyan
+    local profile_uuid profile_path palette
+    read -r background surface surface_alt text muted accent accent_alt warning error green yellow blue magenta cyan <<< "$(theme_colors "$theme")"
+
+    if ! command -v dconf >/dev/null 2>&1; then
+        return
+    fi
+
+    profile_uuid="$(dconf read /org/gnome/terminal/legacy/profiles:/default 2>/dev/null | tr -d "'" || true)"
+    if [ -z "$profile_uuid" ] && command -v gsettings >/dev/null 2>&1; then
+        profile_uuid="$(gsettings get org.gnome.Terminal.ProfilesList default 2>/dev/null | tr -d "'" || true)"
+    fi
+    if [ -z "$profile_uuid" ]; then
+        profile_uuid="$(dconf read /org/gnome/terminal/legacy/profiles:/list 2>/dev/null | grep -oE "'[^']+'" | head -n1 | tr -d "'" || true)"
+    fi
+    if [ -z "$profile_uuid" ]; then
+        return
+    fi
+
+    profile_path="/org/gnome/terminal/legacy/profiles:/:${profile_uuid}/"
+    palette="['$background', '$error', '$green', '$yellow', '$blue', '$magenta', '$cyan', '$text', '$muted', '$error', '$green', '$warning', '$accent', '$accent_alt', '$cyan', '$text']"
+
+    dconf write "${profile_path}use-theme-colors" "false" || true
+    dconf write "${profile_path}use-theme-background" "false" || true
+    dconf write "${profile_path}background-color" "'$background'" || true
+    dconf write "${profile_path}foreground-color" "'$text'" || true
+    dconf write "${profile_path}bold-color-same-as-fg" "false" || true
+    dconf write "${profile_path}bold-color" "'$accent_alt'" || true
+    dconf write "${profile_path}cursor-colors-set" "true" || true
+    dconf write "${profile_path}cursor-background-color" "'$accent'" || true
+    dconf write "${profile_path}cursor-foreground-color" "'$background'" || true
+    dconf write "${profile_path}highlight-colors-set" "true" || true
+    dconf write "${profile_path}highlight-background-color" "'$surface'" || true
+    dconf write "${profile_path}highlight-foreground-color" "'$text'" || true
+    dconf write "${profile_path}palette" "$palette" || true
+
+    if command -v gsettings >/dev/null 2>&1; then
+        gsettings set org.gnome.Terminal.Legacy.Settings headerbar false
+        gsettings set org.gnome.Terminal.Legacy.Settings default-show-menubar false
+    fi
+}
+
 set_ghostty_theme() {
     local theme="$1"
     local ghostty_theme=""
@@ -365,9 +409,10 @@ set_mako_colors "$theme"
 set_fuzzel_colors "$theme"
 set_shell_prompt_colors "$theme"
 set_gtk_theme "$theme"
+set_gnome_terminal_theme "$theme"
 set_ghostty_theme "$theme"
-echo "Alacritty theme: $theme"
+echo "Rice theme: $theme"
 
 if command -v notify-send >/dev/null 2>&1; then
-    notify-send "Alacritty theme" "$theme" >/dev/null 2>&1 || true
+    notify-send "Rice theme" "$theme" >/dev/null 2>&1 || true
 fi

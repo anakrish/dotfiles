@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+set -euo pipefail
+
+if command -v picom >/dev/null 2>&1; then
+    picom --config "$HOME/.config/picom/picom.conf" -b
+fi
+if command -v dunst >/dev/null 2>&1; then
+    dunst &
+fi
+if [ -x "$HOME/.local/bin/rice-clipboard-daemon" ]; then
+    "$HOME/.local/bin/rice-clipboard-daemon" &
+fi
+if [ -x "$HOME/.local/bin/i3-rice-polybar" ]; then
+    "$HOME/.local/bin/i3-rice-polybar" &
+fi
+
+exec i3

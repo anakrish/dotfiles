@@ -63,7 +63,7 @@ All binds use `Super` (`$mod`), matching niri-rice muscle memory.
 
 | Shortcut | Action |
 |---|---|
-| `Super+T` | Open Alacritty |
+| `Super+T` | Open GNOME Terminal |
 | `Super+Shift+T` | Switch desktop/terminal theme |
 | `Super+D` | Open fuzzel app launcher |
 | `Super+Minus` | Jump to/create **web** workspace |
@@ -91,7 +91,7 @@ All binds use `Super` (`$mod`), matching niri-rice muscle memory.
 Installed automatically with `--install-packages` on apt, dnf, or pacman:
 
 ```text
-sway waybar fuzzel mako alacritty foot tmux fish emacs
+sway waybar fuzzel mako gnome-terminal foot tmux fish emacs
 brightnessctl playerctl pavucontrol grim slurp wl-clipboard
 swayidle swaylock xwayland
 ```
@@ -107,7 +107,7 @@ downloads them from the upstream nerd-fonts release into `~/.local/share/fonts`
 
 `Super+Shift+T` opens a fuzzel theme picker.  Switching a theme updates:
 
-- Alacritty colour scheme (`import = [...]`)
+- GNOME Terminal palette + colors (via dconf)
 - sway output background and `client.focused` border colours (`swaymsg reload`)
 - Waybar colour palette (`colors.css`, live-reloaded via `SIGUSR2`)
 - mako notification colours (reloaded via `makoctl reload`)

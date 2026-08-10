@@ -5,7 +5,7 @@
 Behaviour (real show/hide toggle):
   * Window in sway's __i3_scratch → show it on the current workspace, floating.
   * Window visible on a workspace → move it to __i3_scratch (hide).
-  * Window does not exist → spawn Alacritty + persistent tmux session, wait for
+  * Window does not exist → spawn GNOME Terminal + persistent tmux session, wait for
     it to appear, then float and focus it. Next invocation hides it.
 """
 
@@ -16,6 +16,7 @@ import time
 
 APP_ID = "rice-scratchpad"
 TITLE  = "Scratchpad"
+SELECTOR = f'[title="^{TITLE}$"]'
 
 
 def sway_json(msg_type: str):
@@ -33,12 +34,12 @@ def swaymsg(*args: str):
     subprocess.run(["swaymsg", *args], capture_output=True, text=True)
 
 
-def find_node_ids(node, app_id: str) -> list[int]:
+def find_node_ids(node) -> list[int]:
     ids: list[int] = []
-    if node.get("app_id") == app_id:
+    if node.get("app_id") == APP_ID or node.get("name") == TITLE:
         ids.append(node["id"])
     for child in node.get("nodes", []) + node.get("floating_nodes", []):
-        ids.extend(find_node_ids(child, app_id))
+        ids.extend(find_node_ids(child))
     return ids
 
 
@@ -57,37 +58,36 @@ def main() -> int:
         return 1
 
     scratch_ws    = get_scratch_ws(tree)
-    in_scratch    = find_node_ids(scratch_ws, APP_ID) if scratch_ws else []
-    all_ids       = find_node_ids(tree, APP_ID)
+    in_scratch    = find_node_ids(scratch_ws) if scratch_ws else []
+    all_ids       = find_node_ids(tree)
     on_workspace  = [i for i in all_ids if i not in in_scratch]
 
     if in_scratch:
         # Bring from scratchpad to current workspace.
-        swaymsg(f'[app_id="{APP_ID}"] scratchpad show')
-        swaymsg(f'[app_id="{APP_ID}"] floating enable')
+        swaymsg(f"{SELECTOR} scratchpad show")
+        swaymsg(f"{SELECTOR} floating enable")
         return 0
 
     if on_workspace:
         # Hide — move back to the scratchpad.
-        swaymsg(f'[app_id="{APP_ID}"] move scratchpad')
+        swaymsg(f"{SELECTOR} move scratchpad")
         return 0
 
     # Window doesn't exist yet — spawn it.
     subprocess.Popen([
-        "alacritty",
+        "gnome-terminal",
         "--class", APP_ID,
         "--title", TITLE,
-        "--option", "window.dimensions.columns=110",
-        "--option", "window.dimensions.lines=30",
-        "--command", "tmux", "new-session", "-A", "-s", "scratchpad",
+        "--geometry", "110x30",
+        "--", "tmux", "new-session", "-A", "-s", "scratchpad",
     ])
 
     # Wait up to 4 s for the window to appear, then float and focus.
     for _ in range(40):
         tree = sway_json("get_tree")
-        if tree and find_node_ids(tree, APP_ID):
-            swaymsg(f'[app_id="{APP_ID}"] floating enable')
-            swaymsg(f'[app_id="{APP_ID}"] focus')
+        if tree and find_node_ids(tree):
+            swaymsg(f"{SELECTOR} floating enable")
+            swaymsg(f"{SELECTOR} focus")
             return 0
         time.sleep(0.1)
 

@@ -25,13 +25,13 @@ def i3msg(*args):
     subprocess.run(["i3-msg"] + list(args), capture_output=True, text=True)
 
 
-def find_ids(node, cls):
+def find_ids(node):
     ids = []
     wp = node.get("window_properties") or {}
-    if wp.get("class") == cls or node.get("name") == TITLE:
+    if wp.get("class") == APP_CLASS or node.get("name") == TITLE:
         ids.append(node["id"])
     for child in node.get("nodes", []) + node.get("floating_nodes", []):
-        ids.extend(find_ids(child, cls))
+        ids.extend(find_ids(child))
     return ids
 
 
@@ -50,32 +50,34 @@ def main():
         return 1
 
     scratch   = get_scratch(tree)
-    in_scratch = find_ids(scratch, APP_CLASS) if scratch else []
-    all_ids    = find_ids(tree, APP_CLASS)
+    in_scratch = find_ids(scratch) if scratch else []
+    all_ids    = find_ids(tree)
     on_ws      = [i for i in all_ids if i not in in_scratch]
 
     if in_scratch:
-        i3msg('[class="{}"] scratchpad show'.format(APP_CLASS))
-        i3msg('[class="{}"] floating enable'.format(APP_CLASS))
+        i3msg('[title="^{}$"] scratchpad show'.format(TITLE))
+        i3msg('[title="^{}$"] floating enable'.format(TITLE))
         return 0
 
     if on_ws:
-        i3msg('[class="{}"] move scratchpad'.format(APP_CLASS))
+        i3msg('[title="^{}$"] move scratchpad'.format(TITLE))
         return 0
 
     # Spawn new scratchpad terminal
     subprocess.Popen([
-        "alacritty", "--class", APP_CLASS, "--title", TITLE,
-        "--option", "window.dimensions.columns=110",
-        "--option", "window.dimensions.lines=30",
-        "--command", "tmux", "new-session", "-A", "-s", "scratchpad"
+        "gnome-terminal",
+        "--class", APP_CLASS,
+        "--title", TITLE,
+        "--geometry", "110x30",
+        "--",
+        "tmux", "new-session", "-A", "-s", "scratchpad"
     ])
 
     for _ in range(40):
         tree = i3_json("get_tree")
-        if tree and find_ids(tree, APP_CLASS):
-            i3msg('[class="{}"] floating enable'.format(APP_CLASS))
-            i3msg('[class="{}"] focus'.format(APP_CLASS))
+        if tree and find_ids(tree):
+            i3msg('[title="^{}$"] floating enable'.format(TITLE))
+            i3msg('[title="^{}$"] focus'.format(TITLE))
             return 0
         time.sleep(0.1)
 

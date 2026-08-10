@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+set -euo pipefail
+
+cat <<'EOF' | rofi -dmenu -i -no-custom -p "i3-rice keys" -theme "$HOME/.config/rofi/config.rasi" >/dev/null
+Super+t       Terminal (gnome-terminal)
+Super+Shift+t Switch theme
+Super+d       App launcher
+Super+Shift+d Workspace picker (focus)
+Super+Ctrl+d  Workspace picker (move window)
+Super+Shift+n Rename workspace
+Super+`       Scratchpad terminal
+Super+Shift+s Screenshot picker
+Super+Shift+c Clipboard history picker
+Super+b       Browser
+Super+e       File manager
+Super+h/j/k/l Focus window
+Super+Ctrl+h/j/k/l Move window
+Super+Shift+h/j/k/l Focus output
+Super+f       Fullscreen toggle
+Super+Shift+e Toggle split/tabbed/stacking layout
+Super+Shift+space Toggle floating
+Super+space   Toggle focus mode
+Super+u / i   Previous / next workspace
+Super+Ctrl+u/i Move to previous / next workspace
+Super+1..9    Go to workspace
+Super+Ctrl+1..9 Move to workspace
+Super+-       Quick workspace: web
+Super+=       Quick workspace: chat
+Super+r       Resize mode
+Super+Shift+Ctrl+l Lock
+Super+Shift+r Restart i3
+Super+Shift+Ctrl+e Exit i3 (prompt)
+Super+Shift+? Show this key list
+EOF
