@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+set -euo pipefail
+
+direction="${1:-}"
+case "$direction" in
+    left|right) ;;
+    *)
+        echo "Usage: i3-consume-or-expel {left|right}" >&2
+        exit 2
+        ;;
+esac
+
+tree="$(i3-msg -t get_tree)"
+focused_id="$(jq -r '.. | objects | select(.focused? == true) | .id' <<< "$tree")"
+parent="$(jq -c --argjson id "$focused_id" '
+    .. | objects
+    | select(((.nodes // []) + (.floating_nodes // [])) | any(.id == $id))
+' <<< "$tree")"
+
+if [ "$(jq -r '.layout' <<< "$parent")" = "splitv" ] &&
+        [ "$(jq -r '(.nodes // []) | length' <<< "$parent")" -gt 1 ]; then
+    i3-msg "move $direction" >/dev/null
+    exit
+fi
+
+mark="__i3_consume_$$"
+i3-msg "mark --add $mark; focus $direction" >/dev/null
+neighbor_id="$(i3-msg -t get_tree |
+    jq -r '.. | objects | select(.focused? == true) | .id')"
+
+if [ "$neighbor_id" = "$focused_id" ]; then
+    i3-msg "unmark $mark" >/dev/null
+    exit
+fi
+
+i3-msg "split v; [con_mark=\"$mark\"] focus; move $direction; unmark $mark" >/dev/null

@@ -6,7 +6,7 @@
 
 # ── Variables ─────────────────────────────────────────────────────────────────
 set $mod   Mod4
-set $term  gnome-terminal --disable-factory --hide-menubar
+set $term  gnome-terminal --hide-menubar
 set $menu  fuzzel
 set $lock  swaylock -F -c 2e3440
 
@@ -67,10 +67,12 @@ font pango:JetBrainsMono Nerd Font Mono 11
 # ── XWayland ──────────────────────────────────────────────────────────────────
 xwayland enable
 
-# DISPLAY exported by the session wrapper matches this; X11 clients work automatically.
-exec_always export DISPLAY=:0
-
 # ── Startup daemons ───────────────────────────────────────────────────────────
+# Make the compositor environment available to D-Bus/systemd services such as
+# xdg-desktop-portal before applications request them.
+exec dbus-update-activation-environment --systemd \
+    DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP XDG_SESSION_TYPE
+
 # Clipboard history daemon.
 exec $HOME/.local/bin/rice-clipboard-daemon
 
@@ -188,11 +190,13 @@ bindsym $mod+f            fullscreen toggle
 bindsym $mod+Shift+f      fullscreen toggle global
 bindsym $mod+m            fullscreen toggle
 
-# Split orientation (sway-specific; no niri equivalent)
+# Split orientation for the next window
 bindsym $mod+backslash    split horizontal
-# Note: $mod+minus is overloaded above for "web" workspace — the split binding
-# takes precedence. Replace that binding if vertical split is preferred:
-# bindsym $mod+minus  split vertical
+bindsym $mod+v            split vertical
+
+# Match niri's consume-or-expel column bindings
+bindsym $mod+bracketleft  exec $HOME/.local/bin/sway-consume-or-expel left
+bindsym $mod+bracketright exec $HOME/.local/bin/sway-consume-or-expel right
 
 # Layout cycling (sway-specific)
 bindsym $mod+Shift+e      layout toggle split tabbed stacking

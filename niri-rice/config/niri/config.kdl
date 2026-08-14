@@ -75,6 +75,8 @@ input {
 // Find more information on the wiki:
 // https://niri-wm.github.io/niri/Configuration:-Outputs
 // Remember to uncomment the node by removing "/-"!
+// Nord backdrops keep empty workspaces and the overview from falling back to
+// the compositor default black background.
 // BenQ RD280UG external monitor - 3840x2560 with 1.5 scale
 output "DP-9" {
     mode "3840x2560@60"

@@ -105,6 +105,7 @@ set_i3_colors() {
     cat > "$polybar_colors" <<EOF
 [colors]
 bg = $background
+bar-bg = #db${background#"#"}
 surface = $surface
 surface-alt = $surface_alt
 fg = $text

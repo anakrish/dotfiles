@@ -2,17 +2,9 @@
 # SPDX-License-Identifier: MIT
 set -euo pipefail
 
-if command -v picom >/dev/null 2>&1; then
-    picom --config "$HOME/.config/picom/picom.conf" -b
-fi
-if command -v dunst >/dev/null 2>&1; then
-    dunst &
-fi
-if [ -x "$HOME/.local/bin/rice-clipboard-daemon" ]; then
-    "$HOME/.local/bin/rice-clipboard-daemon" &
-fi
-if [ -x "$HOME/.local/bin/i3-rice-polybar" ]; then
-    "$HOME/.local/bin/i3-rice-polybar" &
-fi
+dbus-update-activation-environment --systemd \
+    DISPLAY XAUTHORITY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE
+
+"$HOME/.local/bin/i3-rice-scale"
 
 exec i3

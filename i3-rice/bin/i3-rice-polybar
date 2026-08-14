@@ -6,6 +6,29 @@ lock_file="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/i3-rice-polybar.lock"
 exec 9>"$lock_file"
 flock -n 9 || exit 0
 
-killall -q polybar 2>/dev/null || true
+polybar-msg cmd quit >/dev/null 2>&1 || true
 sleep 0.3
-exec polybar main -c ~/.config/polybar/config
+
+dpi="$(xrdb -query 2>/dev/null | awk '$1 == "Xft.dpi:" { print $2; exit}')"
+[[ "$dpi" =~ ^[0-9]+([.][0-9]+)?$ ]] || dpi=96
+
+read -r margin offset offset_y height radius font_size < <(
+    awk -v dpi="$dpi" 'BEGIN {
+        scale = dpi / 96
+        printf "%d %d %d %d %d %d\n",
+            24 * scale + 0.5, 12 * scale + 0.5, 8 * scale + 0.5,
+            34 * scale + 0.5, 12 * scale + 0.5, 10 * scale + 0.5
+    }'
+)
+
+runtime_config="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/i3-rice-polybar.conf"
+sed \
+    -e "s/@BAR_MARGIN@/$margin/g" \
+    -e "s/@BAR_OFFSET@/$offset/g" \
+    -e "s/@BAR_OFFSET_Y@/$offset_y/g" \
+    -e "s/@BAR_HEIGHT@/$height/g" \
+    -e "s/@BAR_RADIUS@/$radius/g" \
+    -e "s/@FONT_SIZE@/$font_size/g" \
+    "$HOME/.config/polybar/config" > "$runtime_config"
+
+exec polybar main -c "$runtime_config"

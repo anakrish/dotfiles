@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+resolution=$(xdpyinfo 2>/dev/null | awk '/dimensions:/ {print $2; exit}')
+if [[ "$resolution" == "3840x2560" ]]; then
+    dpi=144
+    cursor_size=36
+else
+    dpi=96
+    cursor_size=24
+fi
+
+xrdb -merge <<XRESOURCES
+Xft.dpi: $dpi
+Xcursor.size: $cursor_size
+XRESOURCES

@@ -48,5 +48,5 @@ element selected {
 
 element-text {
   background-color: transparent;
-  highlight:        bold @accent;
+  highlight:        bold;
 }

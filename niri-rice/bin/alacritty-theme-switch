@@ -94,6 +94,7 @@ set_niri_colors() {
         return
     fi
 
+    # Update output and overview backdrop colours.
     sed -i \
         -e "s|backdrop-color \"#[^\"]*\"|backdrop-color \"$background\"|g" \
         -e "s|active-gradient from=\"#[^\"]*\" to=\"#[^\"]*\" angle=135|active-gradient from=\"$from\" to=\"$to\" angle=135|" \

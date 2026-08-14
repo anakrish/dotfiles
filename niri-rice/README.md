@@ -2,7 +2,7 @@
 
 This profile installs the niri desktop setup used on the Linux workstation:
 
-- niri config with named workspaces, themed backdrop/focus ring, workspace pickers, and theme switching
+- niri config with named workspaces, themed backdrop/focus ring, and Nord backdrops on outputs/overview so empty workspaces do not fall back to black
 - Alacritty themes and `Mod+Shift+T` theme switcher, plus optional Ghostty/Foot terminal configs
 - Waybar top bar config with niri workspaces, taskbar, focused window, compact system pill, battery, clock, and tray
 - fuzzel launcher and workspace/task pickers
